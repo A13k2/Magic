@@ -119,7 +119,7 @@ def visualization(df, title):
     for df_now, ax1 in zip(df_time_cut, axes.flat):
         x = [i[0] for i in df_now[1]['Position']]
         y = [i[1] for i in df_now[1]['Position']]
-        img = ax1.hist2d(x, y, bins=40, normed=True)
+        img = ax1.hist2d(x, y, bins=40, cmap=plt.cm.jet)
         ax1.set_title(df_now[0], fontdict={'fontsize': 5})
     #         fig.colorbar(img, ax=ax1)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
@@ -127,8 +127,79 @@ def visualization(df, title):
     return fig, axes
 
 
+def raster_plot(senders=0, timeS=0, eventSenders=None, timeStamp=0, neurons=0, title=None, gridSize=400):
+    """
+    Returns Rasterplot of given events.
+
+    ************************
+    Parameters:
+        eventSenders: Neuron ID & Time of spike
+            Get by : nest.GetStatus(....)[0]
+        timeStamp: Range of time to be plotted
+        neurons: ID's of Neurons to be plotted
+        title: Title of the Figure
+    ************************
+    Returns:
+        Nest Raster Plot
+    """
+    if eventSenders != None:
+        senders = eventSenders['senders']
+        timeS = eventSenders['times']
+    event = []
+    ts = []
+    for events, times in zip(senders, timeS):
+        event.append(events % gridSize)
+        ts.append(times)
+    if timeStamp == 0:
+        timeStamp = ts.copy()
+    if neurons == 0:
+        neurons = event.copy()
+    return nest.raster_plot._make_plot(ts, timeStamp, event, neurons, title=title)
 
 
+def distance(eventSenders, distanceMin, distanceMax, distanceFrom):
+     """
+     Returns ID of Sender (Firing Neuron), and related firing time for Neuron in given distance from 'distanceFrom'
+     :param eventSenders: Events perceived from Spike Recording device
+     :param distanceMin: Minimum distance
+     :param distanceMax: Maximum distance
+     :param distanceFrom: Defines from wich elemnt to take the distance from
+     :return:
+         event:  Event ID's
+         ts:     Times of spiking
+     """
+     event = []
+     ts = []
+     senders = eventSenders['senders']
+     times = eventSenders['times']
+     for i in np.arange(0, len(senders), 1):
+         currSender = senders[i]
+         currTime = times[i]
+         distance = tp.Distance([currSender], [distanceFrom])[0]
+         if (distance >= distanceMin and distance <= distanceMax):
+             event.append(currSender)
+             ts.append(currTime)
+     return event, ts
+
+
+def recordElectrode(df, posX, posY, numberOfNeurons=1):
+    """
+    Shows firing Rate for Neuron at given Position
+    :return: Plot
+    """
+    df = df[df['Position'] == (posX, posY)]
+    df_grouped_sender = df.groupby('Sender')
+    fig, axes = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True)
+    for (sender, df_now), ax in zip(df_grouped_sender, axes.flat):
+        df_curr = pd.DataFrame(df_now)
+        df_curr = df_curr.groupby(pd.cut(df_curr['Time'], 10)).count()
+        ax.bar([i for i in range(1, 11)], df_curr['Time'])
+    return fig, axes
+#    df_time_cut = df.groupby(pd.cut(df['Time'], 10))
+#    for interval, df_t in df_time_cut:
+#        df_curr = pd.DataFrame(df_t)
+#        df_curr = df_curr[df_curr['Position'] == (posX, posY)].groupby('Sender').count()
+#        print(df_curr)
 
 class RandomBalancedNetwork:
     def __init__(self, parameters):
@@ -180,10 +251,10 @@ class RandomBalancedNetwork:
                                'elements': 'poisson_generator'})
         stim_i = nest.GetLeaves(stim, local_only=True)[0]
         nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
-        cdict_stim = {'connection_type': 'divergent',
+        background_stim_dict = {'connection_type': 'divergent',
                       'mask': {'circular': {'radius': 2.}},
                       'synapse_model': 'exc'}
-        tp.ConnectLayers(stim, self.l, cdict_stim)
+        tp.ConnectLayers(stim, self.l, background_stim_dict)
         stim2 = tp.CreateLayer({'rows': 1,
                                 'columns': 1,
                                 'elements': 'poisson_generator'})
@@ -225,39 +296,8 @@ class RandomBalancedNetwork:
         self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
         self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
 
-    def raster_plot(self, senders=0, timeS=0, eventSenders=None, timeStamp=0, neurons=0, title=None, gridSize=400):
-        """
-        Returns Rasterplot of given events.
 
-        ************************
-        Parameters:
-            eventSenders: Neuron ID & Time of spike
-                Get by : nest.GetStatus(....)[0]
-            timeStamp: Range of time to be plotted
-            neurons: ID's of Neurons to be plotted
-            title: Title of the Figure
-        ************************
-        Returns:
-            Nest Raster Plot
-        """
-        for eventSenders in [self.events_ex, self.events_in]:
-            print(eventSenders)
-            if eventSenders != None:
-                senders = eventSenders['senders']
-                timeS = eventSenders['times']
-            event = []
-            ts = []
-            for events, times in zip(senders, timeS):
-                event.append(events % self.gridSize)
-                ts.append(times)
-            if timeStamp == 0:
-                timeStamp = ts.copy()
-            if neurons == 0:
-                neurons = event.copy()
-            print(len(event))
-            print(len(ts))
-            nest.raster_plot._make_plot(ts, timeStamp, event, neurons, title=title)
-            plt.show()
+
     def writeParametersToFile(self, file):
         """
         Writing Parameters to file
@@ -273,26 +313,3 @@ class RandomBalancedNetwork:
         for para in self.parameters:
             f.write(para+'\t'+str(self.parameters[para])+'\n')
         f.close()
-    def distance(eventSenders, distanceMin, distanceMax, distanceFrom):
-        """
-        Returns ID of Sender (Firing Neuron), and related firing time for Neuron in given distance from 'distanceFrom'
-        :param eventSenders: Events perceived from Spike Recording device
-        :param distanceMin: Minimum distance
-        :param distanceMax: Maximum distance
-        :param distanceFrom: Defines from wich elemnt to take the distance from
-        :return:
-            event:  Event ID's
-            ts:     Times of spiking
-        """
-        event = []
-        ts = []
-        senders = eventSenders['senders']
-        times = eventSenders['times']
-        for i in np.arange(0, len(senders), 1):
-            currSender = senders[i]
-            currTime = times[i]
-            distance = tp.Distance([currSender], [distanceFrom])[0]
-            if (distance >= distanceMin and distance <= distanceMax):
-                event.append(currSender)
-                ts.append(currTime)
-        return event, ts
