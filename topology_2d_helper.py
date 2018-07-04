@@ -8,76 +8,10 @@ import matplotlib.animation as animation
 import topology_2d_helper as magic
 
 
-def writeParametersToFile(parameter, file):
-    """
-    Writing Parameters to file
-    __________________________
-    Writing crucial Parameters from Simulation to an File.
-    This makes it easier to understand where the Plots came from.
-    __________________________
-    Parameters
-    parameter: Dictionary of Parameters
-    file:      Where to save the file
-    """
-    f = open(file, 'w')
-    for para in parameter:
-        f.write(para+'\t'+str(parameter[para])+'\n')
-    f.close()
 
 
-def raster_plot(senders=0, timeS=0, eventSenders=None, timeStamp=0, neurons=0, title=None, gridSize=400):
-    """
-    Returns Rasterplot of given events.
-
-    ************************
-    Parameters:
-        eventSenders: Neuron ID & Time of spike
-            Get by : nest.GetStatus(....)[0]
-        timeStamp: Range of time to be plotted
-        neurons: ID's of Neurons to be plotted
-        title: Title of the Figure
-    ************************
-    Returns:
-        Nest Raster Plot
-    """
-    if eventSenders != None:
-        senders = eventSenders['senders']
-        timeS = eventSenders['times']
-    event = []
-    ts = []
-    for events, times in zip(senders, timeS):
-        event.append(events % gridSize)
-        ts.append(times)
-    if timeStamp == 0:
-        timeStamp = ts.copy()
-    if neurons == 0:
-        neurons = event.copy()
-    return nest.raster_plot._make_plot(ts, timeStamp, event, neurons, title=title)
 
 
-def distance(eventSenders, distanceMin, distanceMax, distanceFrom):
-    """
-    Returns ID of Sender (Firing Neuron), and related firing time for Neuron in given distance from 'distanceFrom'
-    :param eventSenders: Events perceived from Spike Recording device
-    :param distanceMin: Minimum distance
-    :param distanceMax: Maximum distance
-    :param distanceFrom: Defines from wich elemnt to take the distance from
-    :return:
-        event:  Event ID's
-        ts:     Times of spiking
-    """
-    event = []
-    ts = []
-    senders = eventSenders['senders']
-    times = eventSenders['times']
-    for i in np.arange(0, len(senders), 1):
-        currSender = senders[i]
-        currTime = times[i]
-        distance = tp.Distance([currSender], [distanceFrom])[0]
-        if (distance >= distanceMin and distance <= distanceMax):
-            event.append(currSender)
-            ts.append(currTime)
-    return event, ts
 
 
 def distanceFiringRate(eventSenders, ctr, min=0, max=0.5, bins=5, neurons_per_gridpoint=8, title='Firing Rate vs. Distance', gridSize=400):
@@ -191,3 +125,174 @@ def visualization(df, title):
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     fig.colorbar(img[3], cax=cbar_ax, )
     return fig, axes
+
+
+
+
+
+class RandomBalancedNetwork:
+    def __init__(self, parameters):
+        self.parameters = parameters
+        self.gridSize = parameters['Columns']*parameters['Rows']
+        nest.SetKernelStatus({"resolution": 0.1, "print_time": True, "overwrite_files": True})
+        nest.CopyModel('iaf_psc_alpha', 'exci')
+        nest.CopyModel('iaf_psc_alpha', 'inhi')
+        nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
+        nest.CopyModel('static_synapse', 'inh', {'weight': self.parameters['Inhibitory Weight']})
+        nest.CopyModel('static_synapse', 'inh_strong', {'weight': self.parameters['Weight Stimulus']})
+        self.l = tp.CreateLayer({'rows': self.parameters['Rows'],
+                            'columns': self.parameters['Columns'],
+                            'elements': ['exci', self.parameters['Number excitational cells'], 'inhi', self.parameters['Number inhibitory cells']]})
+        cdict_e2i = {'connection_type': 'divergent',
+                     'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
+                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
+                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'sources': {'model': 'exci'},
+                     'targets': {'model': 'inhi'},
+                     'synapse_model': 'exc'}
+        cdict_e2e = {'connection_type': 'divergent',
+                     'mask': {'circular': {'radius': self.parameters['Excitational Weight']}},
+                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
+                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'sources': {'model': 'exci'},
+                     'targets': {'model': 'exci'},
+                     'synapse_model': 'exc'}
+        cdict_i2e = {'connection_type': 'divergent',
+                     'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
+                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma inhibitory']}},
+                     'delays': {'linear': {'c': 4.0, 'a': 0.04}},
+                     'sources': {'model': 'inhi'},
+                     'targets': {'model': 'exci'},
+                     'synapse_model': 'inh'}
+        cdict_i2i = {'connection_type': 'divergent',
+                     'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
+                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma inhibitory']}},
+                     'delays': {'linear': {'c': 4.0, 'a': 0.04}},
+                     'sources': {'model': 'inhi'},
+                     'targets': {'model': 'inhi'},
+                     'synapse_model': 'inh'}
+        tp.ConnectLayers(self.l, self.l, cdict_e2i)
+        tp.ConnectLayers(self.l, self.l, cdict_e2e)
+        tp.ConnectLayers(self.l, self.l, cdict_i2i)
+        tp.ConnectLayers(self.l, self.l, cdict_i2e)
+        stim = tp.CreateLayer({'rows': 1,
+                               'columns': 1,
+                               'elements': 'poisson_generator'})
+        stim_i = nest.GetLeaves(stim, local_only=True)[0]
+        nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
+        cdict_stim = {'connection_type': 'divergent',
+                      'mask': {'circular': {'radius': 2.}},
+                      'synapse_model': 'exc'}
+        tp.ConnectLayers(stim, self.l, cdict_stim)
+        stim2 = tp.CreateLayer({'rows': 1,
+                                'columns': 1,
+                                'elements': 'poisson_generator'})
+        self.stim2_i = nest.GetLeaves(stim2, local_only=True)[0]
+        nest.SetStatus(self.stim2_i, {'rate': 0.0})
+        self.cdict_stim2 = {'connection_type': 'divergent',
+                       'kernel': {'gaussian': {'p_center': 1., 'sigma': self.parameters['Sigma Stimulus']}},
+                       'mask': {'circular': {'radius': self.parameters['Radius stimulus']},
+                                'anchor': [0., 0.]},
+                       'targets': {'model': 'exci'},
+                       'synapse_model': 'inh_strong'}
+        tp.ConnectLayers(stim2, self.l, self.cdict_stim2)
+        rec = nest.Create("spike_detector")
+        nrns = nest.GetLeaves(self.l, local_only=True)[0]
+        nest.Connect(nrns, rec)
+        self.rec_ex = tp.CreateLayer({'rows': 1,
+                                 'columns': 1,
+                                 'elements': 'spike_detector'})
+        cdict_rec_ex = {'connection_type': 'convergent',
+                        'sources': {'model': "exci"}}
+        tp.ConnectLayers(self.l, self.rec_ex, cdict_rec_ex)
+        self.rec_in = tp.CreateLayer({'rows': 1,
+                                 'columns': 1,
+                                 'elements': 'spike_detector'})
+        cdict_rec_in = {'connection_type': 'convergent',
+                        'sources': {'model': 'inhi'}}
+        tp.ConnectLayers(self.l, self.rec_in, cdict_rec_in)
+
+    def start_simulation(self):
+        nest.Simulate(self.parameters['Time before stimulation'])
+        nest.SetStatus(self.stim2_i, {'rate': self.parameters['Stimulus rate']})
+        nest.Simulate(self.parameters['Time of stimulation'])
+        nest.SetStatus(self.stim2_i, {'rate': 0.0})
+        nest.Simulate(self.parameters['Time after Stimulation'])
+        rec_ex_true = nest.GetLeaves(self.rec_ex, local_only=True)[0]
+        rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
+        self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
+        self.events_in = nest.GetStatus(rec_in_true, "events")[0]
+        self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
+        self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
+
+    def raster_plot(self, senders=0, timeS=0, eventSenders=None, timeStamp=0, neurons=0, title=None, gridSize=400):
+        """
+        Returns Rasterplot of given events.
+
+        ************************
+        Parameters:
+            eventSenders: Neuron ID & Time of spike
+                Get by : nest.GetStatus(....)[0]
+            timeStamp: Range of time to be plotted
+            neurons: ID's of Neurons to be plotted
+            title: Title of the Figure
+        ************************
+        Returns:
+            Nest Raster Plot
+        """
+        for eventSenders in [self.events_ex, self.events_in]:
+            print(eventSenders)
+            if eventSenders != None:
+                senders = eventSenders['senders']
+                timeS = eventSenders['times']
+            event = []
+            ts = []
+            for events, times in zip(senders, timeS):
+                event.append(events % self.gridSize)
+                ts.append(times)
+            if timeStamp == 0:
+                timeStamp = ts.copy()
+            if neurons == 0:
+                neurons = event.copy()
+            print(len(event))
+            print(len(ts))
+            nest.raster_plot._make_plot(ts, timeStamp, event, neurons, title=title)
+            plt.show()
+    def writeParametersToFile(self, file):
+        """
+        Writing Parameters to file
+        __________________________
+        Writing crucial Parameters from Simulation to an File.
+        This makes it easier to understand where the Plots came from.
+        __________________________
+        Parameters
+        parameter: Dictionary of Parameters
+        file:      Where to save the file
+        """
+        f = open(file, 'w')
+        for para in self.parameters:
+            f.write(para+'\t'+str(self.parameters[para])+'\n')
+        f.close()
+    def distance(eventSenders, distanceMin, distanceMax, distanceFrom):
+        """
+        Returns ID of Sender (Firing Neuron), and related firing time for Neuron in given distance from 'distanceFrom'
+        :param eventSenders: Events perceived from Spike Recording device
+        :param distanceMin: Minimum distance
+        :param distanceMax: Maximum distance
+        :param distanceFrom: Defines from wich elemnt to take the distance from
+        :return:
+            event:  Event ID's
+            ts:     Times of spiking
+        """
+        event = []
+        ts = []
+        senders = eventSenders['senders']
+        times = eventSenders['times']
+        for i in np.arange(0, len(senders), 1):
+            currSender = senders[i]
+            currTime = times[i]
+            distance = tp.Distance([currSender], [distanceFrom])[0]
+            if (distance >= distanceMin and distance <= distanceMax):
+                event.append(currSender)
+                ts.append(currTime)
+        return event, ts
