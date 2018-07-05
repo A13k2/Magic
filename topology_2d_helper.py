@@ -8,12 +8,6 @@ import matplotlib.animation as animation
 import topology_2d_helper as magic
 
 
-
-
-
-
-
-
 def distanceFiringRate(eventSenders, ctr, min=0, max=0.5, bins=5, neurons_per_gridpoint=8, title='Firing Rate vs. Distance', gridSize=400):
     """
     Plots firing Rates of Time for different Distances
@@ -61,13 +55,16 @@ def makePandas(senderEvents, ctr):
                          'Position': positions
                          })
 
+
 def convertTopologyToRealID(pandasFrame, gridSize=400):
     for index, row in pandasFrame.iterrows():
         row['Sender'] = row['Sender'] % gridSize
     return pandasFrame
 
+
 def interspikeIntervals(spikeTrain):
     return np.diff(spikeTrain)
+
 
 def fanoFactor(df, bins=10, gridSize=400, tMin=0., tMax=250., tStep=25.):
     """
@@ -102,6 +99,36 @@ def fanoFactor(df, bins=10, gridSize=400, tMin=0., tMax=250., tStep=25.):
         t_old = t
     return ls, tReturn
 
+
+def spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
+    y, x = np.histogram(df['Time']/1000., np.arange(t_start, t_stop, t_step))
+    y = y/((t_stop-t_start)*grid_size*number_of_neurons)
+    return x, y
+
+
+def spike_count_histogram_plot(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
+    x,y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
+    return plt.bar(x[:-1], y, width=0.9*t_step)
+
+
+def fanoFactorNew(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
+    x, y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
+    return np.var(y)/np.mean(y)
+
+def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
+    df_time_cut = df.groupby(pd.cut(df['Time'], bins))
+    ts = []
+    fano = []
+    for t, df_curr in df_time_cut:
+        fano_curr = fanoFactorNew(df_curr, t._repr_base()[0]/1000., t._repr_base()[1]/1000., t_step, number_of_neurons, grid_size)
+        fano.append(fano_curr)
+        ts.append(t._repr_base()[0])
+    return ts, fano
+
+
+def fanoFactorTimePlot(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
+    t_fano, fano = fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=bins)
+    return plt.plot(t_fano, fano)
 
 def visualization(df, title):
     """
@@ -158,28 +185,28 @@ def raster_plot(senders=0, timeS=0, eventSenders=None, timeStamp=0, neurons=0, t
 
 
 def distance(eventSenders, distanceMin, distanceMax, distanceFrom):
-     """
-     Returns ID of Sender (Firing Neuron), and related firing time for Neuron in given distance from 'distanceFrom'
-     :param eventSenders: Events perceived from Spike Recording device
-     :param distanceMin: Minimum distance
-     :param distanceMax: Maximum distance
-     :param distanceFrom: Defines from wich elemnt to take the distance from
-     :return:
-         event:  Event ID's
-         ts:     Times of spiking
-     """
-     event = []
-     ts = []
-     senders = eventSenders['senders']
-     times = eventSenders['times']
-     for i in np.arange(0, len(senders), 1):
-         currSender = senders[i]
-         currTime = times[i]
-         distance = tp.Distance([currSender], [distanceFrom])[0]
-         if (distance >= distanceMin and distance <= distanceMax):
-             event.append(currSender)
-             ts.append(currTime)
-     return event, ts
+    """
+    Returns ID of Sender (Firing Neuron), and related firing time for Neuron in given distance from 'distanceFrom'
+    :param eventSenders: Events perceived from Spike Recording device
+    :param distanceMin: Minimum distance
+    :param distanceMax: Maximum distance
+    :param distanceFrom: Defines from wich elemnt to take the distance from
+    :return:
+        event:  Event ID's
+        ts:     Times of spiking
+    """
+    event = []
+    ts = []
+    senders = eventSenders['senders']
+    times = eventSenders['times']
+    for i in np.arange(0, len(senders), 1):
+        currSender = senders[i]
+        currTime = times[i]
+        distance = tp.Distance([currSender], [distanceFrom])[0]
+        if (distance >= distanceMin and distance <= distanceMax):
+            event.append(currSender)
+            ts.append(currTime)
+    return event, ts
 
 
 def recordElectrode(df, posX, posY, numberOfNeurons=1):
@@ -195,11 +222,7 @@ def recordElectrode(df, posX, posY, numberOfNeurons=1):
         df_curr = df_curr.groupby(pd.cut(df_curr['Time'], 10)).count()
         ax.bar([i for i in range(1, 11)], df_curr['Time'])
     return fig, axes
-#    df_time_cut = df.groupby(pd.cut(df['Time'], 10))
-#    for interval, df_t in df_time_cut:
-#        df_curr = pd.DataFrame(df_t)
-#        df_curr = df_curr[df_curr['Position'] == (posX, posY)].groupby('Sender').count()
-#        print(df_curr)
+
 
 class RandomBalancedNetwork:
     def __init__(self, parameters):
@@ -212,8 +235,8 @@ class RandomBalancedNetwork:
         nest.CopyModel('static_synapse', 'inh', {'weight': self.parameters['Inhibitory Weight']})
         nest.CopyModel('static_synapse', 'inh_strong', {'weight': self.parameters['Weight Stimulus']})
         self.l = tp.CreateLayer({'rows': self.parameters['Rows'],
-                            'columns': self.parameters['Columns'],
-                            'elements': ['exci', self.parameters['Number excitational cells'], 'inhi', self.parameters['Number inhibitory cells']]})
+                                 'columns': self.parameters['Columns'],
+                                 'elements': ['exci', self.parameters['Number excitational cells'], 'inhi', self.parameters['Number inhibitory cells']]})
         cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
@@ -252,8 +275,8 @@ class RandomBalancedNetwork:
         stim_i = nest.GetLeaves(stim, local_only=True)[0]
         nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
         background_stim_dict = {'connection_type': 'divergent',
-                      'mask': {'circular': {'radius': 2.}},
-                      'synapse_model': 'exc'}
+                                'mask': {'circular': {'radius': 2.}},
+                                'synapse_model': 'exc'}
         tp.ConnectLayers(stim, self.l, background_stim_dict)
         stim2 = tp.CreateLayer({'rows': 1,
                                 'columns': 1,
@@ -261,24 +284,24 @@ class RandomBalancedNetwork:
         self.stim2_i = nest.GetLeaves(stim2, local_only=True)[0]
         nest.SetStatus(self.stim2_i, {'rate': 0.0})
         self.cdict_stim2 = {'connection_type': 'divergent',
-                       'kernel': {'gaussian': {'p_center': 1., 'sigma': self.parameters['Sigma Stimulus']}},
-                       'mask': {'circular': {'radius': self.parameters['Radius stimulus']},
-                                'anchor': [0., 0.]},
-                       'targets': {'model': 'exci'},
-                       'synapse_model': 'inh_strong'}
+                            'kernel': {'gaussian': {'p_center': 1., 'sigma': self.parameters['Sigma Stimulus']}},
+                            'mask': {'circular': {'radius': self.parameters['Radius stimulus']},
+                                     'anchor': [0., 0.]},
+                            'targets': {'model': 'exci'},
+                            'synapse_model': 'inh_strong'}
         tp.ConnectLayers(stim2, self.l, self.cdict_stim2)
         rec = nest.Create("spike_detector")
         nrns = nest.GetLeaves(self.l, local_only=True)[0]
         nest.Connect(nrns, rec)
         self.rec_ex = tp.CreateLayer({'rows': 1,
-                                 'columns': 1,
-                                 'elements': 'spike_detector'})
+                                      'columns': 1,
+                                      'elements': 'spike_detector'})
         cdict_rec_ex = {'connection_type': 'convergent',
                         'sources': {'model': "exci"}}
         tp.ConnectLayers(self.l, self.rec_ex, cdict_rec_ex)
         self.rec_in = tp.CreateLayer({'rows': 1,
-                                 'columns': 1,
-                                 'elements': 'spike_detector'})
+                                      'columns': 1,
+                                      'elements': 'spike_detector'})
         cdict_rec_in = {'connection_type': 'convergent',
                         'sources': {'model': 'inhi'}}
         tp.ConnectLayers(self.l, self.rec_in, cdict_rec_in)
@@ -295,8 +318,6 @@ class RandomBalancedNetwork:
         self.events_in = nest.GetStatus(rec_in_true, "events")[0]
         self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
         self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
-
-
 
     def writeParametersToFile(self, file):
         """

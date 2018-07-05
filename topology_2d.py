@@ -41,35 +41,42 @@ def stimulationControlLazy(network):
 
 
 base_folder = '/home/alex/Magic/figures/'
-date_folder = '2018_07_04/'
+date_folder = '18_07_05/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 
 parameters = {'Name': 'excitation',
-              'Columns': 40,
-              'Rows': 40,
+              'Columns': 20,
+              'Rows': 20,
               'Excitational Weight': 5.0,
-              'Radius excitational': 0.05,
-              'Sigma excitational': 0.025,
+              'Radius excitational': 0.1,
+              'Sigma excitational': 0.05,
               'Inhibitory Weight': -5.0,
-              'Radius inhibitory': 0.1,
-              'Sigma inhibitory': 0.05,
+              'Radius inhibitory': 0.15,
+              'Sigma inhibitory': 0.075,
               'Number excitational cells': 5,
               'Number inhibitory cells': 5,
               'Weight Stimulus': 30.,
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
               'Stimulus rate': 40000.,
-              'Background rate': 15000.,
-              'Time before stimulation': 1000.,
-              'Time of stimulation': 500.,
-              'Time after Stimulation': 1000.,
+              'Background rate': 35000.,
+              'Time before stimulation': 500.,
+              'Time of stimulation': 200.,
+              'Time after Stimulation': 500.,
               }
 
 pd.set_option('display.max_columns', 500)
 
 exc = magic.RandomBalancedNetwork(parameters)
 exc.start_simulation()
+#magic.spike_count_histogram_plot(exc.df_ex, 0., 0.25, 0.01, exc.parameters['Number excitational cells'], exc.gridSize)
+fano = magic.fanoFactorNew(exc.df_ex, 0., 1.05, 0.01, exc.parameters['Number excitational cells'], exc.gridSize)
+magic.fanoFactorTimePlot(exc.df_ex, 0., 1.05, .01, exc.parameters['Number excitational cells'], exc.gridSize, bins=20)
+plt.show()
+magic.fanoFactorTimePlot(exc.df_in, 0., 1.05, .01, exc.parameters['Number excitational cells'], exc.gridSize, bins=20)
+plt.show()
+magic.fanoFactorNew(exc.df_ex, 0., 0.25, 0.01, exc.parameters['Number excitational cells'], exc.gridSize)
 exc.writeParametersToFile(all_folder + 'parameters.txt')
 magic.recordElectrode(exc.df_ex, 0.2625, 0.2625, 8)
 plt.show()
@@ -79,9 +86,9 @@ stimulationControlLazy(exc)
 # distancePlotsLazy(0.,.5,.1,exc)
 magic.visualization(exc.df_ex, "Test")
 magic.raster_plot(eventSenders=exc.events_ex, gridSize=exc.gridSize)
-plt.savefig(all_folder + 'raster_exci_exci.png', dpi=300)
+plt.savefig(all_folder + 'raster_exci_' + exc.parameters['Name'] + '.png', dpi=300)
 magic.raster_plot(eventSenders=exc.events_in, gridSize=exc.gridSize)
-plt.savefig(all_folder + 'raster_inhi_exci.png', dpi=300)
+plt.savefig(all_folder + 'raster_inhi_' + exc.parameters['Name'] + '.png', dpi=300)
 
 # print('Calculating Fano Factor (may take longer)')
 # fano, tFano = fanoFactor(df_ex, gridSize=gridSize, tMin=0., tMax=550., tStep=25.)
