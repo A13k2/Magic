@@ -128,7 +128,10 @@ def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bi
 
 def fanoFactorTimePlot(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
     t_fano, fano = fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=bins)
-    return plt.plot(t_fano, fano)
+    fig = plt.plot(t_fano, fano)
+    plt.ylim(0., 1.)
+    return fig
+
 
 def visualization(df, title):
     """
@@ -219,8 +222,8 @@ def recordElectrode(df, posX, posY, numberOfNeurons=1):
     fig, axes = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True)
     for (sender, df_now), ax in zip(df_grouped_sender, axes.flat):
         df_curr = pd.DataFrame(df_now)
-        df_curr = df_curr.groupby(pd.cut(df_curr['Time'], 10)).count()
-        ax.bar([i for i in range(1, 11)], df_curr['Time'])
+        df_curr = df_curr.groupby(pd.cut(df_curr['Time'], 40)).count()
+        ax.bar([i for i in range(1, 41)], df_curr['Time'])
     return fig, axes
 
 
@@ -228,7 +231,9 @@ class RandomBalancedNetwork:
     def __init__(self, parameters):
         self.parameters = parameters
         self.gridSize = parameters['Columns']*parameters['Rows']
+        nest.ResetKernel()
         nest.SetKernelStatus({"resolution": 0.1, "print_time": True, "overwrite_files": True})
+        nest.SetKernelStatus({"local_num_threads": 4})
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
@@ -254,14 +259,14 @@ class RandomBalancedNetwork:
         cdict_i2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma inhibitory']}},
-                     'delays': {'linear': {'c': 4.0, 'a': 0.04}},
+                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
                      'sources': {'model': 'inhi'},
                      'targets': {'model': 'exci'},
                      'synapse_model': 'inh'}
         cdict_i2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma inhibitory']}},
-                     'delays': {'linear': {'c': 4.0, 'a': 0.04}},
+                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
                      'sources': {'model': 'inhi'},
                      'targets': {'model': 'inhi'},
                      'synapse_model': 'inh'}
