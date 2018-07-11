@@ -10,8 +10,8 @@ from pandas.util.testing import network
 import topology_2d_helper as magic
 
 base_folder = '/home/alex/Magic/figures/'
-date_folder = '18_07_06/'
-sub_folder = 'inhibition40x40/'
+date_folder = '18_07_10/'
+sub_folder = 'test2/'
 all_folder = base_folder + date_folder + sub_folder
 
 def distancePlotsLazy(Start, End, Step, network):
@@ -93,11 +93,11 @@ parameters = {'Name': 'inhibition',
               'Columns': 40,
               'Rows': 40,
               'Excitational Weight': 5.0,
-              'Radius excitational': 0.35,
-              'Sigma excitational': 0.15,
+              'Radius excitational': 0.1,
+              'Sigma excitational': 0.05,
               'Inhibitory Weight': -5.0,
-              'Radius inhibitory': 0.5,
-              'Sigma inhibitory': 0.18,
+              'Radius inhibitory': 0.15,
+              'Sigma inhibitory': 0.075,
               'Number excitational cells': 5,
               'Number inhibitory cells': 5,
               'Weight Stimulus': -3000.,

@@ -149,9 +149,8 @@ def visualization(df, title):
     for df_now, ax1 in zip(df_time_cut, axes.flat):
         x = [i[0] for i in df_now[1]['Position']]
         y = [i[1] for i in df_now[1]['Position']]
-        img = ax1.hist2d(x, y, bins=40, cmap=plt.cm.jet)
+        img = ax1.hist2d(x, y, bins=40, cmap=plt.cm.jet, normed=True, vmin=0., vmax=1.)
         ax1.set_title(df_now[0], fontdict={'fontsize': 5})
-    #         fig.colorbar(img, ax=ax1)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     fig.colorbar(img[3], cax=cbar_ax, )
     return fig, axes
@@ -220,10 +219,16 @@ def recordElectrode(df, posX, posY, numberOfNeurons=1):
     df = df[df['Position'] == (posX, posY)]
     df_grouped_sender = df.groupby('Sender')
     fig, axes = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True)
+    fig.suptitle('Recorded Spikes at Position: (' + str(round(posX, 2)) + ', ' + str(round(posY, 2)) + ')')
+    fig.text(0.5, 0.04, '$s$', ha='center')
+    fig.text(0.04, 0.5, 'Spikes', va='center', rotation='vertical')
     for (sender, df_now), ax in zip(df_grouped_sender, axes.flat):
         df_curr = pd.DataFrame(df_now)
         df_curr = df_curr.groupby(pd.cut(df_curr['Time'], 40)).count()
-        ax.bar([i for i in range(1, 41)], df_curr['Time'])
+        t = [round(t._repr_base()[1]/1000., 4) for t in df_curr.index]
+        ax.bar(t, df_curr['Time'], align='center', width=0.05)
+#        ax.set_xlabel('$s$')
+#        ax.set_ylabel('Spikes')
     return fig, axes
 
 
@@ -233,7 +238,7 @@ class RandomBalancedNetwork:
         self.gridSize = parameters['Columns']*parameters['Rows']
         nest.ResetKernel()
         nest.SetKernelStatus({"resolution": 0.1, "print_time": True, "overwrite_files": True})
-        nest.SetKernelStatus({"local_num_threads": 4})
+        nest.SetKernelStatus({"local_num_threads": 2})
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
