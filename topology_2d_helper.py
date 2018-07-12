@@ -50,8 +50,7 @@ def makePandas(senderEvents, ctr):
     distances = [i for i in tp.Distance(senders, [ctr])]
     positions = [i for i in tp.GetPosition(senders)]
     return pd.DataFrame({'Sender': senders,
-                         'Time': times,
-                         'Distance from Center': distances,
+                         'Time': times, 'Distance from Center': distances,
                          'Position': positions
                          })
 
@@ -219,7 +218,7 @@ def recordElectrode(df, posX, posY, numberOfNeurons=1):
     df = df[df['Position'] == (posX, posY)]
     df_grouped_sender = df.groupby('Sender')
     fig, axes = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True)
-    fig.suptitle('Recorded Spikes at Position: (' + str(round(posX, 2)) + ', ' + str(round(posY, 2)) + ')')
+    fig.suptitle('Recorded Spikes at Position: $(' + str(round(posX, 2)) + ', ' + str(round(posY, 2)) + ')$')
     fig.text(0.5, 0.04, '$s$', ha='center')
     fig.text(0.04, 0.5, 'Spikes', va='center', rotation='vertical')
     for (sender, df_now), ax in zip(df_grouped_sender, axes.flat):
