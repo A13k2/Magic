@@ -1,4 +1,5 @@
 import nest
+import general_helper as gen
 import nest.topology as tp
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ import os
 import topology_2d_helper as magic
 
 base_folder = '/home/alex/Magic/figures/'
-date_folder = '18_07_12/'
+date_folder = '18_07_13/'
 sub_folder = 'test2/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -52,14 +53,16 @@ def stimulationControlLazy(network, folder):
 
 
 def fanoFactorTimeLazy(network, folder):
-    plt.close()
+    plt.clf()
     magic.fanoFactorTimePlot(network.df_ex, 0., (network.parameters['Time before stimulation']+network.parameters['Time of stimulation']+network.parameters['Time after Stimulation'])/1000., .01, network.parameters['Number excitational cells'], network.gridSize, bins=20)
     plt.savefig(folder + '/excitatory_neurons/fano_factor_time.png',
                 dpi=300)
     plt.close()
+    plt.clf()
     magic.fanoFactorTimePlot(network.df_in, 0., (network.parameters['Time before stimulation']+network.parameters['Time of stimulation']+network.parameters['Time after Stimulation'])/1000., .01, network.parameters['Number inhibitory cells'], network.gridSize, bins=20)
     plt.savefig(folder + '/inhibitory_neurons/fano_factor_time.png',
                 dpi=300)
+    plt.close()
 
 
 def spikeCountHistogramLazy(network, folder):
@@ -125,36 +128,46 @@ def automation():
                   'Time of stimulation': 500.,
                   'Time after Stimulation': 1000.,
                   }
-    radius_inhib = [0.1, 0.2, 0.05, 0.025]
-    sigma_inhib = [0.075, 0.1, 0.025, 0.02]
-    radius_exci = [0.1, 0.1, 0.05, 0.0125]
-    sigma_exci = [0.05, 0.05, 0.025, 0.006125]
+    radius_inhibs = [0.1, 0.2, 0.05, 0.025]
+    sigma_inhibs = [0.075, 0.1, 0.025, 0.02]
+    radius_excis = [0.1, 0.1, 0.05, 0.0125]
+    sigma_excis = [0.05, 0.05, 0.025, 0.006125]
     simulations = []
-    for radius_inhib, sigma_inhib, radius_exci, sigma_exci in zip(radius_inhib, sigma_inhib, radius_exci, sigma_exci):
-        name = "inh_(" + str(radius_inhib) + "," + str(sigma_inhib) + ")_exci_(" + str(radius_exci) + "," + str(sigma_exci) + ")"
-        curr_folder = base_folder + date_folder + name
-        if not os.path.exists(curr_folder):
-            os.mkdir(curr_folder)
-            os.mkdir(curr_folder+'/excitatory_neurons')
-            os.mkdir(curr_folder+'/inhibitory_neurons')
-        parameters['Name'] = name
-        parameters['Radius excitational'] = radius_exci
-        parameters['Radius inhibitory'] = radius_inhib
-        parameters['Sigma excitational'] = sigma_exci
-        parameters['Sigma inhibitory'] = sigma_inhib
-        simulation = magic.RandomBalancedNetwork(parameters)
-        simulations.append(simulation)
-        simulation.start_simulation()
-        simulation.writeParametersToFile(curr_folder + '/parameters.txt')
-        recordElectrodeLazy(simulation, curr_folder)
-        fanoFactorTimeLazy(simulation, curr_folder)
-        spikeCountHistogramLazy(simulation, curr_folder)
-        stimulationControlLazy(simulation, curr_folder)
-        rasterPlotLazy(simulation, curr_folder)
-    print('test')
+    sim_folder = base_folder + date_folder
+    for cols_rows in [20, 40, 80, 120, 160]:
+        col_folder = sim_folder + '/colsRows_' + str(cols_rows)
+        gen.create_folder(col_folder)
+        parameters['Columns'] = cols_rows
+        parameters['Rows'] = cols_rows
+        for background_rate in [15000., 20000., 25000., 30000., 35000., 40000.]:
+            background_folder = col_folder + '/background_' + str(background_rate)
+            gen.create_folder(background_folder)
+            parameters['Background rate'] = background_rate
+            for radius_inhib, sigma_inhib, radius_exci, sigma_exci in zip(radius_inhibs, sigma_inhibs, radius_excis, sigma_excis):
+                name = "inh_(" + str(radius_inhib) + "," + str(sigma_inhib) + ")_exci_(" + str(radius_exci) + "," + str(sigma_exci) + ")"
+                curr_folder = background_folder + '/' + name
+                if not os.path.exists(curr_folder):
+                    os.mkdir(curr_folder)
+                    os.mkdir(curr_folder+'/excitatory_neurons')
+                    os.mkdir(curr_folder+'/inhibitory_neurons')
+                parameters['Name'] = name
+                parameters['Radius excitational'] = radius_exci
+                parameters['Radius inhibitory'] = radius_inhib
+                parameters['Sigma excitational'] = sigma_exci
+                parameters['Sigma inhibitory'] = sigma_inhib
+                simulation = magic.RandomBalancedNetwork(parameters)
+                simulations.append(simulation)
+                simulation.start_simulation()
+                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+                recordElectrodeLazy(simulation, curr_folder)
+                fanoFactorTimeLazy(simulation, curr_folder)
+                spikeCountHistogramLazy(simulation, curr_folder)
+                stimulationControlLazy(simulation, curr_folder)
+                rasterPlotLazy(simulation, curr_folder)
+                distancePlotsLazy(simulation, curr_folder)
+
 
 automation()
-
 
 #parameters = {'Name': 'inhibition',
 #              'Columns': 40,
