@@ -281,6 +281,7 @@ class RandomBalancedNetwork:
         stim = tp.CreateLayer({'rows': 1,
                                'columns': 1,
                                'elements': 'poisson_generator'})
+        stim_i = nest.GetGlobalLeaves(stim, local_only=True)[0]
         stim_i = nest.GetLeaves(stim, local_only=True)[0]
         nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
         background_stim_dict = {'connection_type': 'divergent',
