@@ -11,11 +11,12 @@ import os
 
 import topology_2d_helper as magic
 
-base_folder = '/home/alex/Magic/figures/'
-date_folder = '18_07_13/'
-sub_folder = 'test2/'
+base_folder = '/home/adrossel/Magic/figures/'
+date_folder = '18_07_19/'
+sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
+
 
 def distancePlotsLazy(Start, End, Step, network, folder):
     for events, title, neurons_folder in zip([network.events_ex, network.events_in], ["Excitatory", "Inhibitory"], ['/excitatory_neurons', '/inhibitory_neurons']):
@@ -132,9 +133,9 @@ def automation():
     sigma_inhibs = [0.075, 0.1, 0.025, 0.02]
     radius_excis = [0.1, 0.1, 0.05, 0.0125]
     sigma_excis = [0.05, 0.05, 0.025, 0.006125]
-    simulations = []
+#    simulations = []
     sim_folder = base_folder + date_folder
-    for cols_rows in [20, 40, 80, 120, 160]:
+    for cols_rows in [80, 120, 160]:
         col_folder = sim_folder + '/colsRows_' + str(cols_rows)
         gen.create_folder(col_folder)
         parameters['Columns'] = cols_rows
@@ -156,7 +157,7 @@ def automation():
                 parameters['Sigma excitational'] = sigma_exci
                 parameters['Sigma inhibitory'] = sigma_inhib
                 simulation = magic.RandomBalancedNetwork(parameters)
-                simulations.append(simulation)
+#                simulations.append(simulation)
                 simulation.start_simulation()
                 simulation.writeParametersToFile(curr_folder + '/parameters.txt')
                 recordElectrodeLazy(simulation, curr_folder)
@@ -164,7 +165,8 @@ def automation():
                 spikeCountHistogramLazy(simulation, curr_folder)
                 stimulationControlLazy(simulation, curr_folder)
                 rasterPlotLazy(simulation, curr_folder)
-                distancePlotsLazy(simulation, curr_folder)
+#                distancePlotsLazy(0., 0.5, 0.05, simulation, curr_folder)
+                del simulation
 
 
 automation()

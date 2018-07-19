@@ -62,6 +62,11 @@ def convertTopologyToRealID(pandasFrame, gridSize=400):
 
 
 def interspikeIntervals(spikeTrain):
+    """
+    Returns Interspike Intervals (Time difference between Spikes)
+    :param spikeTrain:
+    :return:
+    """
     return np.diff(spikeTrain)
 
 
@@ -100,21 +105,62 @@ def fanoFactor(df, bins=10, gridSize=400, tMin=0., tMax=250., tStep=25.):
 
 
 def spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
+    """
+    Returns Histogram splitted for different Times
+    :param df:
+    :param t_start:
+    :param t_stop:
+    :param t_step:
+    :param number_of_neurons:
+    :param grid_size:
+    :return:
+    """
     y, x = np.histogram(df['Time']/1000., np.arange(t_start, t_stop, t_step))
     y = y/((t_stop-t_start)*grid_size*number_of_neurons)
     return x, y
 
 
 def spike_count_histogram_plot(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
+    """
+    Return Plot for spike_count_histogram
+    :param df:
+    :param t_start:
+    :param t_stop:
+    :param t_step:
+    :param number_of_neurons:
+    :param grid_size:
+    :return:
+    """
     x,y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
     return plt.bar(x[:-1], y, width=0.9*t_step)
 
 
 def fanoFactorNew(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
+    """
+    Return Fano Factor for pandas dataframe and for different times
+    :param df:
+    :param t_start:
+    :param t_stop:
+    :param t_step:
+    :param number_of_neurons:
+    :param grid_size:
+    :return:
+    """
     x, y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
     return np.var(y)/np.mean(y)
 
 def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
+    """
+    Fano Factor at different Time
+    :param df:
+    :param t_start:
+    :param t_stop:
+    :param t_step:
+    :param number_of_neurons:
+    :param grid_size:
+    :param bins:
+    :return:
+    """
     df_time_cut = df.groupby(pd.cut(df['Time'], bins))
     ts = []
     fano = []
@@ -126,6 +172,17 @@ def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bi
 
 
 def fanoFactorTimePlot(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
+    """
+    Return Plot for fanoFactorTime
+    :param df:
+    :param t_start:
+    :param t_stop:
+    :param t_step:
+    :param number_of_neurons:
+    :param grid_size:
+    :param bins:
+    :return:
+    """
     t_fano, fano = fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=bins)
     fig = plt.plot(t_fano, fano)
     plt.ylim(0., 1.)
@@ -237,7 +294,7 @@ class RandomBalancedNetwork:
         self.gridSize = parameters['Columns']*parameters['Rows']
         nest.ResetKernel()
         nest.SetKernelStatus({"resolution": 0.1, "print_time": True, "overwrite_files": True})
-        nest.SetKernelStatus({"local_num_threads": 2})
+        nest.SetKernelStatus({"local_num_threads": 4})
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
@@ -281,7 +338,7 @@ class RandomBalancedNetwork:
         stim = tp.CreateLayer({'rows': 1,
                                'columns': 1,
                                'elements': 'poisson_generator'})
-        stim_i = nest.GetGlobalLeaves(stim, local_only=True)[0]
+        stim_i = nest.GetLeaves(stim, local_only=True)[0]
         stim_i = nest.GetLeaves(stim, local_only=True)[0]
         nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
         background_stim_dict = {'connection_type': 'divergent',
@@ -340,7 +397,7 @@ class RandomBalancedNetwork:
         parameter: Dictionary of Parameters
         file:      Where to save the file
         """
-        f = open(file, 'w')
-        for para in self.parameters:
-            f.write(para+'\t'+str(self.parameters[para])+'\n')
-        f.close()
+        with open(file, 'w') as f:
+            for para in self.parameters:
+                f.write(para+'\t'+str(self.parameters[para])+'\n')
+            f.close()
