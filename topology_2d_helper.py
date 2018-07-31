@@ -1,6 +1,12 @@
-import nest
+#import nest
+#import for missing pythonpath
+import imp
+nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
+
 import nest.topology as tp
 import numpy as np
+import matplotlib
+matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 import nest.raster_plot
 import pandas as pd
@@ -165,9 +171,9 @@ def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bi
     ts = []
     fano = []
     for t, df_curr in df_time_cut:
-        fano_curr = fanoFactorNew(df_curr, t._repr_base()[0]/1000., t._repr_base()[1]/1000., t_step, number_of_neurons, grid_size)
+        fano_curr = fanoFactorNew(df_curr, t.left/1000., t.right/1000., t_step, number_of_neurons, grid_size)
         fano.append(fano_curr)
-        ts.append(t._repr_base()[0])
+        ts.append(t.left)
     return ts, fano
 
 
@@ -281,7 +287,7 @@ def recordElectrode(df, posX, posY, numberOfNeurons=1):
     for (sender, df_now), ax in zip(df_grouped_sender, axes.flat):
         df_curr = pd.DataFrame(df_now)
         df_curr = df_curr.groupby(pd.cut(df_curr['Time'], 40)).count()
-        t = [round(t._repr_base()[1]/1000., 4) for t in df_curr.index]
+        t = [round(t.right/1000., 4) for t in df_curr.index]
         ax.bar(t, df_curr['Time'], align='center', width=0.05)
 #        ax.set_xlabel('$s$')
 #        ax.set_ylabel('Spikes')
@@ -302,7 +308,10 @@ class RandomBalancedNetwork:
         nest.CopyModel('static_synapse', 'inh_strong', {'weight': self.parameters['Weight Stimulus']})
         self.l = tp.CreateLayer({'rows': self.parameters['Rows'],
                                  'columns': self.parameters['Columns'],
-                                 'elements': ['exci', self.parameters['Number excitational cells'], 'inhi', self.parameters['Number inhibitory cells']]})
+                                 'elements': ['exci', self.parameters['Number excitational cells'],
+				 	      'inhi', self.parameters['Number inhibitory cells']],
+                                 'edge_wrap': True
+				})
         cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
@@ -311,7 +320,7 @@ class RandomBalancedNetwork:
                      'targets': {'model': 'inhi'},
                      'synapse_model': 'exc'}
         cdict_e2e = {'connection_type': 'divergent',
-                     'mask': {'circular': {'radius': self.parameters['Excitational Weight']}},
+                     'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
                      'delays': {'linear': {'c': 2.0, 'a': 0.02}},
                      'sources': {'model': 'exci'},
@@ -342,7 +351,8 @@ class RandomBalancedNetwork:
         stim_i = nest.GetLeaves(stim, local_only=True)[0]
         nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
         background_stim_dict = {'connection_type': 'divergent',
-                                'mask': {'circular': {'radius': 2.}},
+                                'mask': {'grid': {'rows': self.parameters['Rows'],
+                                                  'columns': self.parameters['Columns']}},
                                 'synapse_model': 'exc'}
         tp.ConnectLayers(stim, self.l, background_stim_dict)
         stim2 = tp.CreateLayer({'rows': 1,

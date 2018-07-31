@@ -1,6 +1,11 @@
-import nest
+#import nest
+#import for missing pythonpath
+import imp
+nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
 import general_helper as gen
 import nest.topology as tp
+import matplotlib
+matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
 import nest.raster_plot
@@ -8,11 +13,10 @@ import pandas as pd
 import matplotlib.animation as animation
 from pandas.util.testing import network
 import os
-
 import topology_2d_helper as magic
 
-base_folder = '/home/adrossel/Magic/figures/'
-date_folder = '18_07_19/'
+base_folder = '/home/alex/Magic/figures/'
+date_folder = '18_07_25_periodic_boundary/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -80,7 +84,10 @@ def spikeCountHistogramLazy(network, folder):
 def recordElectrodeLazy(network, folder):
     neurons_x_position_distance = 0.5/(network.parameters['Columns']/2.)
     neurons_x_position = [(i, 0.) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)]
+#Add y-Positions
     neurons_x_position += ([(0., i) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)])
+#Add diagonal
+    neurons_x_position += ([(i, i) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)])
     neurons_x_position = tp.FindNearestElement(network.l, neurons_x_position)
     neurons_position = tp.GetPosition(neurons_x_position)
     for position in neurons_position:
@@ -107,7 +114,6 @@ def rasterPlotLazy(network, folder):
     plt.savefig(folder + '/inhibitory_neurons/raster.png', dpi=300)
 
 
-
 def automation():
     parameters = {'Name': 'inhibition',
                   'Columns': 40,
@@ -129,13 +135,14 @@ def automation():
                   'Time of stimulation': 500.,
                   'Time after Stimulation': 1000.,
                   }
-    radius_inhibs = [0.1, 0.2, 0.05, 0.025]
-    sigma_inhibs = [0.075, 0.1, 0.025, 0.02]
-    radius_excis = [0.1, 0.1, 0.05, 0.0125]
-    sigma_excis = [0.05, 0.05, 0.025, 0.006125]
-#    simulations = []
+    radius_inhibs = [0.1, 0.2, 0.2, 0.1, 0.2]
+    sigma_inhibs = [0.075, 0.1, 0.1, 0.05, 0.75]
+    radius_excis = [0.1, 0.2, 0.1, 0.2, 0.1]
+    sigma_excis = [0.05, 0.1, 0.05, 0.1, 0.5]
+    weight_inhis = [-5., -5.0, -4.0, -10.0, -20.0]
+    weight_excis = [5., 5.0, 4.0, 10.0, 20.0]
     sim_folder = base_folder + date_folder
-    for cols_rows in [80, 120, 160]:
+    for cols_rows in [60, 80]:
         col_folder = sim_folder + '/colsRows_' + str(cols_rows)
         gen.create_folder(col_folder)
         parameters['Columns'] = cols_rows
@@ -144,8 +151,8 @@ def automation():
             background_folder = col_folder + '/background_' + str(background_rate)
             gen.create_folder(background_folder)
             parameters['Background rate'] = background_rate
-            for radius_inhib, sigma_inhib, radius_exci, sigma_exci in zip(radius_inhibs, sigma_inhibs, radius_excis, sigma_excis):
-                name = "inh_(" + str(radius_inhib) + "," + str(sigma_inhib) + ")_exci_(" + str(radius_exci) + "," + str(sigma_exci) + ")"
+            for radius_inhib, sigma_inhib, radius_exci, sigma_exci, weight_inhi, weight_exci  in zip(radius_inhibs, sigma_inhibs, radius_excis, sigma_excis, weight_inhis, weight_excis):
+                name = "inh_(" + str(radius_inhib) + "," + str(sigma_inhib) + ")_exci_(" + str(radius_exci) + "," + str(sigma_exci) + "_wight_inhi_" + str(weight_inhi) + "weight_exci_" + str(weight_exci) + ")"
                 curr_folder = background_folder + '/' + name
                 if not os.path.exists(curr_folder):
                     os.mkdir(curr_folder)
