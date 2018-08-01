@@ -1,7 +1,7 @@
-#import nest
+import nest
 #import for missing pythonpath
-import imp
-nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
+#import imp
+#nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
 
 import nest.topology as tp
 import numpy as np
@@ -291,6 +291,27 @@ def recordElectrode(df, posX, posY, numberOfNeurons=1):
         ax.bar(t, df_curr['Time'], align='center', width=0.05)
 #        ax.set_xlabel('$s$')
 #        ax.set_ylabel('Spikes')
+    return fig, axes
+
+
+def recordElectrodeEnviroment(df, posX, posY, dX, dY):
+    """
+    Shows firing Rate for Neurons at given Position (posX, posY) and its enivroment (posX+dX, posY+dY)
+    :return: Plot
+    """
+    df = df[df['Position'] == (posX, posY)]
+    df_grouped_sender = df.groupby('Sender')
+    fig, axes = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True)
+    fig.suptitle('Recorded Spikes at Position: $(' + str(round(posX, 2)) + ', ' + str(round(posY, 2)) + ')$')
+    fig.text(0.5, 0.04, '$s$', ha='center')
+    fig.text(0.04, 0.5, 'Spikes', va='center', rotation='vertical')
+    for (sender, df_now), ax in zip(df_grouped_sender, axes.flat):
+        df_curr = pd.DataFrame(df_now)
+        df_curr = df_curr.groupby(pd.cut(df_curr['Time'], 40)).count()
+        t = [round(t.right/1000., 4) for t in df_curr.index]
+        ax.bar(t, df_curr['Time'], align='center', width=0.05)
+    #        ax.set_xlabel('$s$')
+    #        ax.set_ylabel('Spikes')
     return fig, axes
 
 

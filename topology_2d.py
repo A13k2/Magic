@@ -1,22 +1,19 @@
-#import nest
-#import for missing pythonpath
-import imp
-nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
+# import for missing pythonpath
+# import imp
+# nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
+
 import general_helper as gen
 import nest.topology as tp
 import matplotlib
 matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
-import nest.raster_plot
 import pandas as pd
-import matplotlib.animation as animation
-from pandas.util.testing import network
 import os
 import topology_2d_helper as magic
 
 base_folder = '/home/alex/Magic/figures/'
-date_folder = '18_07_25_periodic_boundary/'
+date_folder = '18_07_31/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -175,8 +172,39 @@ def automation():
 #                distancePlotsLazy(0., 0.5, 0.05, simulation, curr_folder)
                 del simulation
 
+def testSimulation():
+    parameters = {'Name': 'inhibition',
+                  'Columns': 40,
+                  'Rows': 40,
+                  'Excitational Weight': 5.0,
+                  'Radius excitational': 0.1,
+                  'Sigma excitational': 0.05,
+                  'Inhibitory Weight': -5.0,
+                  'Radius inhibitory': 0.15,
+                  'Sigma inhibitory': 0.075,
+                  'Number excitational cells': 5,
+                  'Number inhibitory cells': 5,
+                  'Weight Stimulus': -3000.,
+                  'Radius stimulus': 0.1,
+                  'Sigma Stimulus': 0.05,
+                  'Stimulus rate': 40000.,
+                  'Background rate': 35000.,
+                  'Time before stimulation': 1000.,
+                  'Time of stimulation': 500.,
+                  'Time after Stimulation': 1000.,
+                  }
+    simulation = magic.RandomBalancedNetwork(parameters)
+    simulation.start_simulation()
+    simulation.writeParametersToFile(all_folder + 'parameters.txt')
+    neurons_x_position = tp.FindNearestElement(simulation.l, (0.,0.))
+    neurons_position = tp.GetPosition(neurons_x_position)
+    magic.recordElectrodeEnviroment(simulation.df_ex, neurons_position[0][0], neurons_position[0][1], 0.1, 0.1)
+    plt.savefig(all_folder + '/excitatory_neurons/electrode_' + str(round(neurons_position[0], 4)) + ', ' + str(round(neu[1], 4)) + '.png', dpi=300)
+    plt.close()
 
-automation()
+
+#automation()
+testSimulation()
 
 #parameters = {'Name': 'inhibition',
 #              'Columns': 40,
