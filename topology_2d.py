@@ -12,8 +12,8 @@ import pandas as pd
 import os
 import topology_2d_helper as magic
 
-base_folder = '/home/alex/Magic/figures/'
-date_folder = '18_07_31/'
+base_folder = '/home/adrossel/Magic/figures/'
+date_folder = '18_08_01/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -98,6 +98,25 @@ def recordElectrodeLazy(network, folder):
                     dpi=300)
 
 
+def recordElectrodeEnviromentLazy(network, folder):
+    neurons_x_position_distance = 0.5/(network.parameters['Columns']/2.)
+    neurons_x_position = [(i, 0.) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)]
+    #Add y-Positions
+    neurons_x_position += ([(0., i) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)])
+    #Add diagonal
+    neurons_x_position += ([(i, i) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)])
+    neurons_x_position = tp.FindNearestElement(network.l, neurons_x_position)
+    neurons_position = tp.GetPosition(neurons_x_position)
+    for position in neurons_position:
+        plt.close()
+        magic.recordElectrodeEnviroment(network.df_ex, position[0], position[1], 0.05, 0.05)
+        plt.savefig(folder + '/excitatory_neurons/electrode_enviroment' + str(round(position[0], 4)) + ', ' + str(round(position[1], 4)) + '.png',
+                    dpi=300)
+        plt.close()
+        magic.recordElectrodeEnviroment(network.df_in, position[0], position[1], 0.05, 0.05)
+        plt.savefig(folder + '/inhibitory_neurons/electrode_enviroment' + str(round(position[0], 4)) + ', ' + str(round(position[1], 4)) + '.png',
+                    dpi=300)
+
 def rasterPlotLazy(network, folder):
     """
     Creates Raster Plots for excitatory an inhibitory neurons of the given network.
@@ -164,13 +183,15 @@ def automation():
 #                simulations.append(simulation)
                 simulation.start_simulation()
                 simulation.writeParametersToFile(curr_folder + '/parameters.txt')
-                recordElectrodeLazy(simulation, curr_folder)
+#                recordElectrodeLazy(simulation, curr_folder)
+                recordElectrodeEnviromentLazy(simulation, curr_folder)
                 fanoFactorTimeLazy(simulation, curr_folder)
                 spikeCountHistogramLazy(simulation, curr_folder)
                 stimulationControlLazy(simulation, curr_folder)
                 rasterPlotLazy(simulation, curr_folder)
 #                distancePlotsLazy(0., 0.5, 0.05, simulation, curr_folder)
                 del simulation
+
 
 def testSimulation():
     parameters = {'Name': 'inhibition',
@@ -199,12 +220,12 @@ def testSimulation():
     neurons_x_position = tp.FindNearestElement(simulation.l, (0.,0.))
     neurons_position = tp.GetPosition(neurons_x_position)
     magic.recordElectrodeEnviroment(simulation.df_ex, neurons_position[0][0], neurons_position[0][1], 0.1, 0.1)
-    plt.savefig(all_folder + '/excitatory_neurons/electrode_' + str(round(neurons_position[0], 4)) + ', ' + str(round(neu[1], 4)) + '.png', dpi=300)
+    plt.savefig(all_folder + '/excitatory_neurons/electrode_' + str(round(neurons_position[0], 4)) + ', ' + str(round(neurons_position[1], 4)) + '.png', dpi=300)
     plt.close()
 
 
-#automation()
-testSimulation()
+automation()
+#testSimulation()
 
 #parameters = {'Name': 'inhibition',
 #              'Columns': 40,
