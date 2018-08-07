@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import topology_2d_helper as magic
+import gc
 
 base_folder = '/home/adrossel/Magic/figures/'
-date_folder = '18_08_01/'
+date_folder = '18_08_07/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -191,6 +192,7 @@ def automation():
                 rasterPlotLazy(simulation, curr_folder)
 #                distancePlotsLazy(0., 0.5, 0.05, simulation, curr_folder)
                 del simulation
+                gc.collect()
 
 
 def testSimulation():
