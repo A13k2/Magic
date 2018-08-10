@@ -3,6 +3,7 @@ import nest
 #import imp
 #nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
 
+import gc
 import nest.topology as tp
 import numpy as np
 import matplotlib
@@ -171,6 +172,7 @@ def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bi
     ts = []
     fano = []
     for t, df_curr in df_time_cut:
+#        import pdb; pdb.set_trace()
         fano_curr = fanoFactorNew(df_curr, t.left/1000., t.right/1000., t_step, number_of_neurons, grid_size)
         fano.append(fano_curr)
         ts.append(t.left)
@@ -300,7 +302,7 @@ def recordElectrodeEnviroment(df, posX, posY, dX, dY):
     :return: Plot
     """
     times = [t for (x, y), t in zip(df['Position'], df['Time']) if posX-dX <= x <= posX+dX and posY-dY <= y <= posY+dY]
-    figure = plt.hist(times, bins='auto')
+    figure = plt.hist(times, bins=50)
     return figure
 
 
@@ -309,8 +311,8 @@ class RandomBalancedNetwork:
         self.parameters = parameters
         self.gridSize = parameters['Columns']*parameters['Rows']
         nest.ResetKernel()
-        nest.SetKernelStatus({"resolution": 0.1, "print_time": True, "overwrite_files": True})
-        nest.SetKernelStatus({"local_num_threads": 4})
+        nest.SetKernelStatus({"resolution": 0.1, "print_time": True})
+        nest.SetKernelStatus({"local_num_threads": 8})
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
@@ -399,12 +401,12 @@ class RandomBalancedNetwork:
         nest.Simulate(self.parameters['Time of stimulation'])
         nest.SetStatus(self.stim2_i, {'rate': 0.0})
         nest.Simulate(self.parameters['Time after Stimulation'])
-        rec_ex_true = nest.GetLeaves(self.rec_ex, local_only=True)[0]
-        rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
-        self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
-        self.events_in = nest.GetStatus(rec_in_true, "events")[0]
-        self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
-        self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
+#        rec_ex_true = nest.GetLeaves(self.rec_ex, local_only=True)[0]
+#        rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
+#        self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
+#        self.events_in = nest.GetStatus(rec_in_true, "events")[0]
+#        self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
+#        self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
 
     def writeParametersToFile(self, file):
         """
@@ -421,3 +423,8 @@ class RandomBalancedNetwork:
             for para in self.parameters:
                 f.write(para+'\t'+str(self.parameters[para])+'\n')
             f.close()
+    def kill(self):
+        print('Deleting simulation!')
+#        del self.l, self.stim2_i, self.rec_in, self.rec_ex, self.events_ex, self.events_in, self.df_ex, self.df_in
+        del self
+        gc.collect()
