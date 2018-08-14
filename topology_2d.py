@@ -15,7 +15,7 @@ import gc
 
 
 base_folder = '/home/alex/Magic/figures/'
-date_folder = '18_08_10/'
+date_folder = '18_08_07/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -165,7 +165,7 @@ def automation():
         gen.create_folder(col_folder)
         parameters['Columns'] = cols_rows
         parameters['Rows'] = cols_rows
-        for background_rate in [30000., 35000., 40000.]:
+        for background_rate in [20000., 25000., 30000., 35000., 40000.]:
             background_folder = col_folder + '/background_' + str(background_rate)
             gen.create_folder(background_folder)
             parameters['Background rate'] = background_rate
@@ -184,12 +184,9 @@ def automation():
                 print('Loading parameters in Simulation.')
                 nest.ResetKernel()
                 simulation = magic.RandomBalancedNetwork(parameters)
-                simulation.start_simulation()
-                import pdb; pdb.set_trace()
-                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
-                simulation.kill()
-                del simulation
 #                simulations.append(simulation)
+                simulation.start_simulation()
+                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
 #                recordElectrodeLazy(simulation, curr_folder)
 #                fanoFactorTimeLazy(simulation, curr_folder)
 #                recordElectrodeEnviromentLazy(simulation, curr_folder)
@@ -197,6 +194,7 @@ def automation():
 #                stimulationControlLazy(simulation, curr_folder)
 #                rasterPlotLazy(simulation, curr_folder)
 #                distancePlotsLazy(0., 0.5, 0.05, simulation, curr_folder)
+        del simulation
 
 
 def testSimulation():
