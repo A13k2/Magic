@@ -401,12 +401,12 @@ class RandomBalancedNetwork:
         nest.Simulate(self.parameters['Time of stimulation'])
         nest.SetStatus(self.stim2_i, {'rate': 0.0})
         nest.Simulate(self.parameters['Time after Stimulation'])
-#        rec_ex_true = nest.GetLeaves(self.rec_ex, local_only=True)[0]
-#        rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
-#        self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
-#        self.events_in = nest.GetStatus(rec_in_true, "events")[0]
-#        self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
-#        self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
+        rec_ex_true = nest.GetLeaves(self.rec_ex, local_only=True)[0]
+        rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
+        self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
+        self.events_in = nest.GetStatus(rec_in_true, "events")[0]
+        self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
+        self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
 
     def writeParametersToFile(self, file):
         """
