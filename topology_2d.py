@@ -187,12 +187,20 @@ def automation():
                 simulation.start_simulation()
                 simulation.writeParametersToFile(curr_folder + '/parameters.txt')
 #                recordElectrodeLazy(simulation, curr_folder)
+<<<<<<< HEAD
+                fanoFactorTimeLazy(simulation, curr_folder)
+                recordElectrodeEnviromentLazy(simulation, curr_folder)
+                spikeCountHistogramLazy(simulation, curr_folder)
+                stimulationControlLazy(simulation, curr_folder)
+                rasterPlotLazy(simulation, curr_folder)
+=======
 #                fanoFactorTimeLazy(simulation, curr_folder)
                 recordElectrodeEnviromentLazy(simulation, curr_folder)
 #                spikeCountHistogramLazy(simulation, curr_folder)
                 stimulationControlLazy(simulation, curr_folder)
                 del simulation
 #                rasterPlotLazy(simulation, curr_folder)
+>>>>>>> 216a303e2777e258117556a1eb62a2b510397415
 #                distancePlotsLazy(0., 0.5, 0.05, simulation, curr_folder)
 
 
