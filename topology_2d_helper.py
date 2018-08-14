@@ -273,13 +273,13 @@ def distance(eventSenders, distanceMin, distanceMax, distanceFrom):
     return event, ts
 
 
-def recordElectrode(df, posX, posY, numberOfNeurons=1):
+def recordElectrode(*df, posX, posY, numberOfNeurons=1):
     """
     Shows firing Rate for Neuron at given Position
     :return: Plot
     """
-    df = df[df['Position'] == (posX, posY)]
-    df_grouped_sender = df.groupby('Sender')
+    df_pos = df[df['Position'] == (posX, posY)]
+    df_grouped_sender = df_pos.groupby('Sender')
     fig, axes = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=True)
     fig.suptitle('Recorded Spikes at Position: $(' + str(round(posX, 2)) + ', ' + str(round(posY, 2)) + ')$')
     fig.text(0.5, 0.04, '$s$', ha='center')
