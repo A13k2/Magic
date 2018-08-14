@@ -3,6 +3,7 @@ import nest
 #import imp
 #nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
 
+import gc
 import nest.topology as tp
 import numpy as np
 import matplotlib
@@ -171,6 +172,7 @@ def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bi
     ts = []
     fano = []
     for t, df_curr in df_time_cut:
+#        import pdb; pdb.set_trace()
         fano_curr = fanoFactorNew(df_curr, t.left/1000., t.right/1000., t_step, number_of_neurons, grid_size)
         fano.append(fano_curr)
         ts.append(t.left)
@@ -300,7 +302,7 @@ def recordElectrodeEnviroment(df, posX, posY, dX, dY):
     :return: Plot
     """
     times = [t for (x, y), t in zip(df['Position'], df['Time']) if posX-dX <= x <= posX+dX and posY-dY <= y <= posY+dY]
-    figure = plt.hist(times, bins='auto')
+    figure = plt.hist(times, bins=50)
     return figure
 
 
@@ -309,8 +311,8 @@ class RandomBalancedNetwork:
         self.parameters = parameters
         self.gridSize = parameters['Columns']*parameters['Rows']
         nest.ResetKernel()
-        nest.SetKernelStatus({"resolution": 0.1, "print_time": True, "overwrite_files": True})
-        nest.SetKernelStatus({"local_num_threads": 4})
+        nest.SetKernelStatus({"resolution": 0.1, "print_time": True})
+        nest.SetKernelStatus({"local_num_threads": 8})
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
@@ -399,12 +401,12 @@ class RandomBalancedNetwork:
         nest.Simulate(self.parameters['Time of stimulation'])
         nest.SetStatus(self.stim2_i, {'rate': 0.0})
         nest.Simulate(self.parameters['Time after Stimulation'])
-        rec_ex_true = nest.GetLeaves(self.rec_ex, local_only=True)[0]
-        rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
-        self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
-        self.events_in = nest.GetStatus(rec_in_true, "events")[0]
-        self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
-        self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
+#        rec_ex_true = nest.GetLeaves(self.rec_ex, local_only=True)[0]
+#        rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
+#        self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
+#        self.events_in = nest.GetStatus(rec_in_true, "events")[0]
+#        self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
+#        self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
 
     def writeParametersToFile(self, file):
         """
@@ -420,4 +422,119 @@ class RandomBalancedNetwork:
         with open(file, 'w') as f:
             for para in self.parameters:
                 f.write(para+'\t'+str(self.parameters[para])+'\n')
+            f.close()
+
+
+
+def random(parameters):
+        parameters = parameters
+        gridSize = parameters['Columns']*parameters['Rows']
+        nest.ResetKernel()
+        nest.SetKernelStatus({"resolution": 0.1, "print_time": True})
+        nest.SetKernelStatus({"local_num_threads": 8})
+        nest.CopyModel('iaf_psc_alpha', 'exci')
+        nest.CopyModel('iaf_psc_alpha', 'inhi')
+        nest.CopyModel('static_synapse', 'exc', {'weight': parameters['Excitational Weight']})
+        nest.CopyModel('static_synapse', 'inh', {'weight': parameters['Inhibitory Weight']})
+        nest.CopyModel('static_synapse', 'inh_strong', {'weight': parameters['Weight Stimulus']})
+        l = tp.CreateLayer({'rows': parameters['Rows'],
+                                 'columns': parameters['Columns'],
+                                 'elements': ['exci', parameters['Number excitational cells'],
+				 	                          'inhi', parameters['Number inhibitory cells']],
+                                 'edge_wrap': True
+				                 })
+        cdict_e2i = {'connection_type': 'divergent',
+                     'mask': {'circular': {'radius': parameters['Radius excitational']}},
+                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': parameters['Sigma excitational']}},
+                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'sources': {'model': 'exci'},
+                     'targets': {'model': 'inhi'},
+                     'synapse_model': 'exc'}
+        cdict_e2e = {'connection_type': 'divergent',
+                     'mask': {'circular': {'radius': parameters['Radius excitational']}},
+                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': parameters['Sigma excitational']}},
+                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'sources': {'model': 'exci'},
+                     'targets': {'model': 'exci'},
+                     'synapse_model': 'exc'}
+        cdict_i2e = {'connection_type': 'divergent',
+                     'mask': {'circular': {'radius': parameters['Radius inhibitory']}},
+                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': parameters['Sigma inhibitory']}},
+                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'sources': {'model': 'inhi'},
+                     'targets': {'model': 'exci'},
+                     'synapse_model': 'inh'}
+        cdict_i2i = {'connection_type': 'divergent',
+                     'mask': {'circular': {'radius': parameters['Radius inhibitory']}},
+                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': parameters['Sigma inhibitory']}},
+                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'sources': {'model': 'inhi'},
+                     'targets': {'model': 'inhi'},
+                     'synapse_model': 'inh'}
+        tp.ConnectLayers(l, l, cdict_e2i)
+        tp.ConnectLayers(l, l, cdict_e2e)
+        tp.ConnectLayers(l, l, cdict_i2i)
+        tp.ConnectLayers(l, l, cdict_i2e)
+        stim = tp.CreateLayer({'rows': 1,
+                               'columns': 1,
+                               'elements': 'poisson_generator'})
+        stim_i = nest.GetLeaves(stim, local_only=True)[0]
+        stim_i = nest.GetLeaves(stim, local_only=True)[0]
+        nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
+        background_stim_dict = {'connection_type': 'divergent',
+                                'mask': {'grid': {'rows': parameters['Rows'],
+                                                  'columns': parameters['Columns']}},
+                                'synapse_model': 'exc'}
+        tp.ConnectLayers(stim, l, background_stim_dict)
+        stim2 = tp.CreateLayer({'rows': 1,
+                                'columns': 1,
+                                'elements': 'poisson_generator'})
+        stim2_i = nest.GetLeaves(stim2, local_only=True)[0]
+        nest.SetStatus(stim2_i, {'rate': 0.0})
+        cdict_stim2 = {'connection_type': 'divergent',
+                            'kernel': {'gaussian': {'p_center': 1., 'sigma': parameters['Sigma Stimulus']}},
+                            'mask': {'circular': {'radius': parameters['Radius stimulus']},
+                                     'anchor': [0., 0.]},
+                            'targets': {'model': 'exci'},
+                            'synapse_model': 'inh_strong'}
+        tp.ConnectLayers(stim2, l, cdict_stim2)
+        rec = nest.Create("spike_detector")
+        nrns = nest.GetLeaves(l, local_only=True)[0]
+        nest.Connect(nrns, rec)
+        rec_ex = tp.CreateLayer({'rows': 1,
+                                      'columns': 1,
+                                      'elements': 'spike_detector'})
+        cdict_rec_ex = {'connection_type': 'convergent',
+                        'sources': {'model': "exci"}}
+        tp.ConnectLayers(l, rec_ex, cdict_rec_ex)
+        rec_in = tp.CreateLayer({'rows': 1,
+                                      'columns': 1,
+                                      'elements': 'spike_detector'})
+        cdict_rec_in = {'connection_type': 'convergent',
+                        'sources': {'model': 'inhi'}}
+        tp.ConnectLayers(l, rec_in, cdict_rec_in)
+        nest.Simulate(parameters['Time before stimulation'])
+        nest.SetStatus(stim2_i, {'rate': parameters['Stimulus rate']})
+        nest.Simulate(parameters['Time of stimulation'])
+        nest.SetStatus(stim2_i, {'rate': 0.0})
+        nest.Simulate(parameters['Time after Stimulation'])
+#        rec_ex_true = nest.GetLeaves(rec_ex, local_only=True)[0]
+#        rec_in_true = nest.GetLeaves(rec_in, local_only=True)[0]
+#        events_ex = nest.GetStatus(rec_ex_true, "events")[0]
+#        events_in = nest.GetStatus(rec_in_true, "events")[0]
+#        df_ex = magic.makePandas(events_ex, tp.FindCenterElement(l)[0])
+#        df_in = magic.makePandas(events_in, tp.FindCenterElement(l)[0])
+        """
+        Writing Parameters to file
+        __________________________
+        Writing crucial Parameters from Simulation to an File.
+        This makes it easier to understand where the Plots came from.
+        __________________________
+        Parameters
+        parameter: Dictionary of Parameters
+        file:      Where to save the file
+        """
+        with open(file, 'w') as f:
+            for para in parameters:
+                f.write(para+'\t'+str(parameters[para])+'\n')
             f.close()

@@ -1,7 +1,7 @@
 # import for missing pythonpath
 # import imp
 # nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
-
+import nest
 import general_helper as gen
 import nest.topology as tp
 import matplotlib
@@ -13,7 +13,8 @@ import os
 import topology_2d_helper as magic
 import gc
 
-base_folder = '/home/adrossel/Magic/figures/'
+
+base_folder = '/home/alex/Magic/figures/'
 date_folder = '18_08_07/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
@@ -159,12 +160,12 @@ def automation():
     weight_inhis = [-5., -5.0, -4.0, -10.0, -20.0]
     weight_excis = [5., 5.0, 4.0, 10.0, 20.0]
     sim_folder = base_folder + date_folder
-    for cols_rows in [60, 80]:
+    for cols_rows in [80]:
         col_folder = sim_folder + '/colsRows_' + str(cols_rows)
         gen.create_folder(col_folder)
         parameters['Columns'] = cols_rows
         parameters['Rows'] = cols_rows
-        for background_rate in [15000., 20000., 25000., 30000., 35000., 40000.]:
+        for background_rate in [20000., 25000., 30000., 35000., 40000.]:
             background_folder = col_folder + '/background_' + str(background_rate)
             gen.create_folder(background_folder)
             parameters['Background rate'] = background_rate
@@ -180,19 +181,28 @@ def automation():
                 parameters['Radius inhibitory'] = radius_inhib
                 parameters['Sigma excitational'] = sigma_exci
                 parameters['Sigma inhibitory'] = sigma_inhib
+                print('Loading parameters in Simulation.')
+                nest.ResetKernel()
                 simulation = magic.RandomBalancedNetwork(parameters)
 #                simulations.append(simulation)
                 simulation.start_simulation()
                 simulation.writeParametersToFile(curr_folder + '/parameters.txt')
 #                recordElectrodeLazy(simulation, curr_folder)
+<<<<<<< HEAD
                 fanoFactorTimeLazy(simulation, curr_folder)
                 recordElectrodeEnviromentLazy(simulation, curr_folder)
                 spikeCountHistogramLazy(simulation, curr_folder)
                 stimulationControlLazy(simulation, curr_folder)
                 rasterPlotLazy(simulation, curr_folder)
+=======
+#                fanoFactorTimeLazy(simulation, curr_folder)
+#                recordElectrodeEnviromentLazy(simulation, curr_folder)
+#                spikeCountHistogramLazy(simulation, curr_folder)
+#                stimulationControlLazy(simulation, curr_folder)
+#                rasterPlotLazy(simulation, curr_folder)
+>>>>>>> 216a303e2777e258117556a1eb62a2b510397415
 #                distancePlotsLazy(0., 0.5, 0.05, simulation, curr_folder)
-                del simulation
-                gc.collect()
+        del simulation
 
 
 def testSimulation():
