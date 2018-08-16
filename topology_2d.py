@@ -1,7 +1,4 @@
-# import for missing pythonpath
-# import imp
-# nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
-import nest
+import sys
 import general_helper as gen
 import nest.topology as tp
 import matplotlib
@@ -11,11 +8,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import topology_2d_helper as magic
-import gc
 
 
-base_folder = '/home/alex/Magic/figures/'
-date_folder = '18_08_14/'
+base_folder = '/home/adrossel/Magic/figures/'
+date_folder = '18_08_16/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -132,6 +128,18 @@ def rasterPlotLazy(network, folder):
     plt.savefig(folder + '/inhibitory_neurons/raster.png', dpi=300)
 
 
+def simulationAndAnalysis(parameters, curr_folder='.'):
+                simulation = magic.RandomBalancedNetwork(parameters)
+                simulation.start_simulation()
+                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+                fanoFactorTimeLazy(simulation, curr_folder)
+                recordElectrodeEnviromentLazy(simulation, curr_folder)
+                spikeCountHistogramLazy(simulation, curr_folder)
+                stimulationControlLazy(simulation, curr_folder)
+                rasterPlotLazy(simulation, curr_folder)
+
+
+
 def automation():
     parameters = {'Name': 'inhibition',
                   'Columns': 40,
@@ -152,6 +160,58 @@ def automation():
                   'Time before stimulation': 1000.,
                   'Time of stimulation': 500.,
                   'Time after Stimulation': 1000.,
+                  }
+    radius_inhibs = [0.1, 0.2, 0.2, 0.1, 0.2]
+    sigma_inhibs = [0.075, 0.1, 0.1, 0.05, 0.75]
+    radius_excis = [0.1, 0.2, 0.1, 0.2, 0.1]
+    sigma_excis = [0.05, 0.1, 0.05, 0.1, 0.5]
+    weight_inhis = [-5., -5.0, -4.0, -10.0, -20.0]
+    weight_excis = [5., 5.0, 4.0, 10.0, 20.0]
+    sim_folder = base_folder + date_folder
+    for cols_rows in [80, 100]:
+        col_folder = sim_folder + '/colsRows_' + str(cols_rows)
+        gen.create_folder(col_folder)
+        parameters['Columns'] = cols_rows
+        parameters['Rows'] = cols_rows
+        for background_rate in [30000., 35000.]:
+            background_folder = col_folder + '/background_' + str(background_rate)
+            gen.create_folder(background_folder)
+            parameters['Background rate'] = background_rate
+            for radius_inhib, sigma_inhib, radius_exci, sigma_exci, weight_inhi, weight_exci  in zip(radius_inhibs, sigma_inhibs, radius_excis, sigma_excis, weight_inhis, weight_excis):
+                name = "inh_(" + str(radius_inhib) + "," + str(sigma_inhib) + ")_exci_(" + str(radius_exci) + "," + str(sigma_exci) + "_wight_inhi_" + str(weight_inhi) + "weight_exci_" + str(weight_exci) + ")"
+                curr_folder = background_folder + '/' + name
+                if not os.path.exists(curr_folder):
+                    os.mkdir(curr_folder)
+                    os.mkdir(curr_folder+'/excitatory_neurons')
+                    os.mkdir(curr_folder+'/inhibitory_neurons')
+                parameters['Name'] = name
+                parameters['Radius excitational'] = radius_exci
+                parameters['Radius inhibitory'] = radius_inhib
+                parameters['Sigma excitational'] = sigma_exci
+                parameters['Sigma inhibitory'] = sigma_inhib
+                magic.simulationAndAnalysis(parameters, curr_folder)
+
+
+def testSimulation():
+    parameters = {'Name': 'inhibition',
+                  'Columns': 40,
+                  'Rows': 40,
+                  'Excitational Weight': 5.0,
+                  'Radius excitational': 0.1,
+                  'Sigma excitational': 0.05,
+                  'Inhibitory Weight': -5.0,
+                  'Radius inhibitory': 0.15,
+                  'Sigma inhibitory': 0.075,
+                  'Number excitational cells': 5,
+                  'Number inhibitory cells': 5,
+                  'Weight Stimulus': -3000.,
+                  'Radius stimulus': 0.1,
+                  'Sigma Stimulus': 0.05,
+                  'Stimulus rate': 40000.,
+                  'Background rate': 35000.,
+                  'Time before stimulation': 100.,
+                  'Time of stimulation': 50.,
+                  'Time after Stimulation': 100.,
                   }
     radius_inhibs = [0.1, 0.2, 0.2, 0.1, 0.2]
     sigma_inhibs = [0.075, 0.1, 0.1, 0.05, 0.75]
@@ -182,29 +242,10 @@ def automation():
                 parameters['Sigma excitational'] = sigma_exci
                 parameters['Sigma inhibitory'] = sigma_inhib
                 print('Loading parameters in Simulation.')
-                nest.ResetKernel()
-                simulation = magic.RandomBalancedNetwork(parameters)
-                simulation.start_simulation()
-                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
-#                recordElectrodeLazy(simulation, curr_folder)
-<<<<<<< HEAD
-                fanoFactorTimeLazy(simulation, curr_folder)
-                recordElectrodeEnviromentLazy(simulation, curr_folder)
-                spikeCountHistogramLazy(simulation, curr_folder)
-                stimulationControlLazy(simulation, curr_folder)
-                rasterPlotLazy(simulation, curr_folder)
-=======
-#                fanoFactorTimeLazy(simulation, curr_folder)
-                recordElectrodeEnviromentLazy(simulation, curr_folder)
-#                spikeCountHistogramLazy(simulation, curr_folder)
-                stimulationControlLazy(simulation, curr_folder)
-                del simulation
-#                rasterPlotLazy(simulation, curr_folder)
->>>>>>> 216a303e2777e258117556a1eb62a2b510397415
-#                distancePlotsLazy(0., 0.5, 0.05, simulation, curr_folder)
+                magic.randBalNetwork(parameters)
 
 
-def testSimulation():
+def bash():
     parameters = {'Name': 'inhibition',
                   'Columns': 40,
                   'Rows': 40,
@@ -225,18 +266,34 @@ def testSimulation():
                   'Time of stimulation': 500.,
                   'Time after Stimulation': 1000.,
                   }
-    simulation = magic.RandomBalancedNetwork(parameters)
-    simulation.start_simulation()
-    simulation.writeParametersToFile(all_folder + 'parameters.txt')
-    neurons_x_position = tp.FindNearestElement(simulation.l, (0.,0.))
-    neurons_position = tp.GetPosition(neurons_x_position)
-    magic.recordElectrodeEnviroment(simulation.df_ex, neurons_position[0][0], neurons_position[0][1], 0.1, 0.1)
-    plt.savefig(all_folder + '/excitatory_neurons/electrode_' + str(round(neurons_position[0], 4)) + ', ' + str(round(neurons_position[1], 4)) + '.png', dpi=300)
-    plt.close()
+    print(str(sys.argv))
+    parameters['Columns'] = int(sys.argv[1])
+    parameters['Rows'] = int(sys.argv[2])
+    parameters['Background Rate'] = float(sys.argv[3])
+    parameters['Radius excitational'] = float(sys.argv[4])
+    parameters['Radius inhibitory'] = float(sys.argv[5])
+    parameters['Sigma excitational'] = float(sys.argv[6])
+    parameters['Sigma inhibitory'] = float(sys.argv[7])
+    parameters['Inhibitory Weight'] = float(sys.argv[8])
+    parameters['Excitational Weight'] = float(sys.argv[9])
+    parameters['Weight Stimulus'] = float(sys.argv[10])
+    sim_folder = base_folder + date_folder
+    col_folder = sim_folder + '/colsRows_' + str(parameters['Columns'])
+    gen.create_folder(col_folder)
+    background_folder = col_folder + '/background_' + str(parameters['Background Rate'])
+    gen.create_folder(background_folder)
+    name = "inh_(" + str(parameters['Radius inhibitory']) + "," + str(parameters['Sigma inhibitory']) + ")_exci_(" + str(parameters['Radius excitational']) + "," + str(parameters['Sigma excitational']) + "_weight_inhi_" + str(parameters['Inhibitory Weight']) + "weight_exci_" + str(parameters['Excitational Weight']) + ")"
+    curr_folder = background_folder + '/' + name
+    parameters['Name'] = name
+    if not os.path.exists(curr_folder):
+        os.mkdir(curr_folder)
+        os.mkdir(curr_folder+'/excitatory_neurons')
+        os.mkdir(curr_folder+'/inhibitory_neurons')
+    magic.simulationAndAnalysis(parameters, curr_folder)
 
-
-automation()
+#automation()
 #testSimulation()
+bash()
 
 #parameters = {'Name': 'inhibition',
 #              'Columns': 40,

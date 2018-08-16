@@ -1,8 +1,4 @@
 import nest
-#import for missing pythonpath
-#import imp
-#nest= imp.load_source('NEST', '/cm/shared/software/NEST/2.14.0-foss-2016b-Python-3.6.1/lib64/python3.6/site-packages/nest/__init__.py')
-
 import gc
 import nest.topology as tp
 import numpy as np
@@ -14,6 +10,128 @@ import pandas as pd
 import matplotlib.animation as animation
 import topology_2d_helper as magic
 
+
+
+def distancePlotsLazy(Start, End, Step, network, folder):
+    for events, title, neurons_folder in zip([network.events_ex, network.events_in], ["Excitatory", "Inhibitory"], ['/excitatory_neurons', '/inhibitory_neurons']):
+        for start, end in zip(np.arange(Start, End, Step), np.arange(Start + Step, End + Step, Step)):
+            plt.close()
+            currentTitle = title + 'Neurons from ' + str(start) + ' to ' + str(end)
+            print(currentTitle)
+            times, neurons = magic.distance(events, start, end, tp.FindCenterElement(network.l)[0])
+            magic.raster_plot(senders=times, timeS=neurons, title=currentTitle, gridSize=network.gridSize)
+            plt.savefig(folder + neurons_folder + '/dist_' + str(end) + '_raster_' + title + '.png',
+                dpi=300)
+
+
+def stimulationControlLazy(network, folder):
+    for df, title, neurons_folder in zip([network.df_ex, network.df_in], ['Excitatory', 'Inhibitory'], ['/excitatory_neurons', '/inhibitory_neurons']):
+        df_before_stim = df[df['Time'] <= network.parameters['Time before stimulation']]
+        plt.close()
+        magic.visualization(df_before_stim, title + ' Neurons before stimulation, ' + network.parameters['Name'])
+        plt.savefig(folder + neurons_folder + '/visu_before_stim_' + title + '_neurons.png',
+                    dpi=300)
+        df_while_stim = df[df['Time'] > network.parameters['Time before stimulation']]
+        df_while_stim = df_while_stim[
+            df_while_stim['Time'] <= network.parameters['Time before stimulation'] + network.parameters[
+                'Time of stimulation']]
+        plt.close()
+        magic.visualization(df_while_stim, title + ' Neurons while stimulation, ' + network.parameters['Name'])
+        plt.savefig(folder + neurons_folder + '/visu_while_stim_' + title + '_neurons.png',
+                    dpi=300)
+        df_after_stim = df[
+            df['Time'] > network.parameters['Time before stimulation'] + network.parameters['Time of stimulation']]
+        plt.close()
+        magic.visualization(df_after_stim, title + ' Neurons after stimulation, ' + network.parameters['Name'])
+        plt.savefig(folder + neurons_folder + '/visu_after_stim_' + title + '_neurons.png',
+                    dpi=300)
+
+
+def fanoFactorTimeLazy(network, folder):
+    plt.clf()
+    magic.fanoFactorTimePlot(network.df_ex, 0., (network.parameters['Time before stimulation']+network.parameters['Time of stimulation']+network.parameters['Time after Stimulation'])/1000., .01, network.parameters['Number excitational cells'], network.gridSize, bins=20)
+    plt.savefig(folder + '/excitatory_neurons/fano_factor_time.png',
+                dpi=300)
+    plt.close()
+    plt.clf()
+    magic.fanoFactorTimePlot(network.df_in, 0., (network.parameters['Time before stimulation']+network.parameters['Time of stimulation']+network.parameters['Time after Stimulation'])/1000., .01, network.parameters['Number inhibitory cells'], network.gridSize, bins=20)
+    plt.savefig(folder + '/inhibitory_neurons/fano_factor_time.png',
+                dpi=300)
+    plt.close()
+
+
+def spikeCountHistogramLazy(network, folder):
+    plt.close()
+    magic.spike_count_histogram_plot(network.df_ex, 0., (network.parameters['Time before stimulation']+network.parameters['Time of stimulation']+network.parameters['Time after Stimulation'])/1000., .01, network.parameters['Number excitational cells'], network.gridSize)
+    plt.savefig(folder + '/excitatory_neurons/spike_count_histogram.png',
+                dpi=300)
+    plt.close()
+    magic.spike_count_histogram_plot(network.df_in, 0., (network.parameters['Time before stimulation']+network.parameters['Time of stimulation']+network.parameters['Time after Stimulation'])/1000., .01, network.parameters['Number inhibitory cells'], network.gridSize)
+    plt.savefig(folder + '/inhibitory_neurons/spike_count_histogram.png',
+                dpi=300)
+
+
+def recordElectrodeLazy(network, folder):
+    neurons_x_position_distance = 0.5/(network.parameters['Columns']/2.)
+    neurons_x_position = [(i, 0.) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)]
+#Add y-Positions
+    neurons_x_position += ([(0., i) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)])
+#Add diagonal
+    neurons_x_position += ([(i, i) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)])
+    neurons_x_position = tp.FindNearestElement(network.l, neurons_x_position)
+    neurons_position = tp.GetPosition(neurons_x_position)
+    for position in neurons_position:
+        plt.close()
+        magic.recordElectrode(network.df_ex, position[0], position[1], 8)
+        plt.savefig(folder + '/excitatory_neurons/electrode_' + str(round(position[0], 4)) + ', ' + str(round(position[1], 4)) + '.png',
+                    dpi=300)
+        plt.close()
+        magic.recordElectrode(network.df_in, position[0], position[1], 8)
+        plt.savefig(folder + '/inhibitory_neurons/electrode_' + str(round(position[0], 4)) + ', ' + str(round(position[1], 4)) + '.png',
+                    dpi=300)
+
+
+def recordElectrodeEnviromentLazy(network, folder):
+    neurons_x_position_distance = 0.5/(network.parameters['Columns']/2.)
+    neurons_x_position = [(i, 0.) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)]
+    #Add y-Positions
+    neurons_x_position += ([(0., i) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)])
+    #Add diagonal
+    neurons_x_position += ([(i, i) for i in np.arange(0., 0.5, neurons_x_position_distance*2.)])
+    neurons_x_position = tp.FindNearestElement(network.l, neurons_x_position)
+    neurons_position = tp.GetPosition(neurons_x_position)
+    for position in neurons_position:
+        plt.close()
+        magic.recordElectrodeEnviroment(network.df_ex, position[0], position[1], 0.05, 0.05)
+        plt.savefig(folder + '/excitatory_neurons/electrode_enviroment' + str(round(position[0], 4)) + ', ' + str(round(position[1], 4)) + '.png',
+                    dpi=300)
+        plt.close()
+        magic.recordElectrodeEnviroment(network.df_in, position[0], position[1], 0.05, 0.05)
+        plt.savefig(folder + '/inhibitory_neurons/electrode_enviroment' + str(round(position[0], 4)) + ', ' + str(round(position[1], 4)) + '.png',
+                    dpi=300)
+
+def rasterPlotLazy(network, folder):
+    """
+    Creates Raster Plots for excitatory an inhibitory neurons of the given network.
+    :param network:
+    :param folder:
+    :return:
+    """
+    magic.raster_plot(eventSenders=network.events_ex, gridSize=network.gridSize)
+    plt.savefig(folder + '/excitatory_neurons/raster.png', dpi=300)
+    magic.raster_plot(eventSenders=network.events_in, gridSize=network.gridSize)
+    plt.savefig(folder + '/inhibitory_neurons/raster.png', dpi=300)
+
+
+def simulationAndAnalysis(parameters, curr_folder='.'):
+                simulation = magic.RandomBalancedNetwork(parameters)
+                simulation.start_simulation()
+                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+                fanoFactorTimeLazy(simulation, curr_folder)
+                recordElectrodeEnviromentLazy(simulation, curr_folder)
+                spikeCountHistogramLazy(simulation, curr_folder)
+                stimulationControlLazy(simulation, curr_folder)
+                rasterPlotLazy(simulation, curr_folder)
 
 def distanceFiringRate(eventSenders, ctr, min=0, max=0.5, bins=5, neurons_per_gridpoint=8, title='Firing Rate vs. Distance', gridSize=400):
     """
@@ -311,8 +429,10 @@ class RandomBalancedNetwork:
         self.parameters = parameters
         self.gridSize = parameters['Columns']*parameters['Rows']
         nest.ResetKernel()
-        nest.SetKernelStatus({"resolution": 0.1, "print_time": True})
-        nest.SetKernelStatus({"local_num_threads": 8})
+        nest.SetKernelStatus({"resolution": 0.1, "print_time": True,
+                              "overwrite_files": True,
+                              "local_num_threads": 8
+                             })
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
@@ -321,9 +441,8 @@ class RandomBalancedNetwork:
         self.l = tp.CreateLayer({'rows': self.parameters['Rows'],
                                  'columns': self.parameters['Columns'],
                                  'elements': ['exci', self.parameters['Number excitational cells'],
-				 	                          'inhi', self.parameters['Number inhibitory cells']],
-                                 'edge_wrap': True
-				                 })
+                                              'inhi', self.parameters['Number inhibitory cells']],
+                                 'edge_wrap': True})
         cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
@@ -426,12 +545,14 @@ class RandomBalancedNetwork:
 
 
 
-def random(parameters):
+
+
+def randBalNetwork(parameters):
         parameters = parameters
         gridSize = parameters['Columns']*parameters['Rows']
         nest.ResetKernel()
         nest.SetKernelStatus({"resolution": 0.1, "print_time": True})
-        nest.SetKernelStatus({"local_num_threads": 8})
+        nest.SetKernelStatus({"local_num_threads": 16})
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.CopyModel('static_synapse', 'exc', {'weight': parameters['Excitational Weight']})
@@ -440,9 +561,7 @@ def random(parameters):
         l = tp.CreateLayer({'rows': parameters['Rows'],
                                  'columns': parameters['Columns'],
                                  'elements': ['exci', parameters['Number excitational cells'],
-				 	                          'inhi', parameters['Number inhibitory cells']],
-                                 'edge_wrap': True
-				                 })
+                                              'inhi', parameters['Number inhibitory cells']], 'edge_wrap': True})
         cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': parameters['Sigma excitational']}},
@@ -498,9 +617,9 @@ def random(parameters):
                             'targets': {'model': 'exci'},
                             'synapse_model': 'inh_strong'}
         tp.ConnectLayers(stim2, l, cdict_stim2)
-        rec = nest.Create("spike_detector")
-        nrns = nest.GetLeaves(l, local_only=True)[0]
-        nest.Connect(nrns, rec)
+#        rec = nest.Create("spike_detector")
+#        nrns = nest.GetLeaves(l, local_only=True)[0]
+#        nest.Connect(nrns, rec)
         rec_ex = tp.CreateLayer({'rows': 1,
                                       'columns': 1,
                                       'elements': 'spike_detector'})
@@ -518,23 +637,9 @@ def random(parameters):
         nest.Simulate(parameters['Time of stimulation'])
         nest.SetStatus(stim2_i, {'rate': 0.0})
         nest.Simulate(parameters['Time after Stimulation'])
-#        rec_ex_true = nest.GetLeaves(rec_ex, local_only=True)[0]
-#        rec_in_true = nest.GetLeaves(rec_in, local_only=True)[0]
-#        events_ex = nest.GetStatus(rec_ex_true, "events")[0]
-#        events_in = nest.GetStatus(rec_in_true, "events")[0]
-#        df_ex = magic.makePandas(events_ex, tp.FindCenterElement(l)[0])
-#        df_in = magic.makePandas(events_in, tp.FindCenterElement(l)[0])
-        """
-        Writing Parameters to file
-        __________________________
-        Writing crucial Parameters from Simulation to an File.
-        This makes it easier to understand where the Plots came from.
-        __________________________
-        Parameters
-        parameter: Dictionary of Parameters
-        file:      Where to save the file
-        """
-        with open(file, 'w') as f:
-            for para in parameters:
-                f.write(para+'\t'+str(parameters[para])+'\n')
-            f.close()
+        rec_ex_true = nest.GetLeaves(rec_ex, local_only=True)[0]
+        rec_in_true = nest.GetLeaves(rec_in, local_only=True)[0]
+        events_ex = nest.GetStatus(rec_ex_true, "events")[0]
+        events_in = nest.GetStatus(rec_in_true, "events")[0]
+        df_ex = magic.makePandas(events_ex, tp.FindCenterElement(l)[0])
+        df_in = magic.makePandas(events_in, tp.FindCenterElement(l)[0])
