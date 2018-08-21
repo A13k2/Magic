@@ -11,7 +11,7 @@ import topology_2d_helper as magic
 
 
 base_folder = '/home/adrossel/Magic/figures/'
-date_folder = '18_08_16/'
+date_folder = '18_08_21/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -213,12 +213,12 @@ def testSimulation():
                   'Time of stimulation': 50.,
                   'Time after Stimulation': 100.,
                   }
+    radius_excis =  [0.1, 0.2, 0.1, 0.2, 0.1]
     radius_inhibs = [0.1, 0.2, 0.2, 0.1, 0.2]
-    sigma_inhibs = [0.075, 0.1, 0.1, 0.05, 0.75]
-    radius_excis = [0.1, 0.2, 0.1, 0.2, 0.1]
-    sigma_excis = [0.05, 0.1, 0.05, 0.1, 0.5]
-    weight_inhis = [-5., -5.0, -4.0, -10.0, -20.0]
-    weight_excis = [5., 5.0, 4.0, 10.0, 20.0]
+    sigma_excis =   [0.05, 0.1, 0.05, 0.1, 0.5]
+    sigma_inhibs =  [0.075, 0.1, 0.1, 0.05, 0.75]
+    weight_inhis =  [-5., -5.0, -4.0, -10.0, -20.0]
+    weight_excis =  [5., 5.0, 4.0, 10.0, 20.0]
     sim_folder = base_folder + date_folder
     for cols_rows in [80]:
         col_folder = sim_folder + '/colsRows_' + str(cols_rows)
