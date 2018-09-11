@@ -11,7 +11,7 @@ import topology_2d_helper as magic
 
 
 base_folder = '/home/adrossel/Magic/figures/'
-date_folder = '18_08_21/'
+date_folder = '18_08_31/'
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -168,7 +168,7 @@ def automation():
     weight_inhis = [-5., -5.0, -4.0, -10.0, -20.0]
     weight_excis = [5., 5.0, 4.0, 10.0, 20.0]
     sim_folder = base_folder + date_folder
-    for cols_rows in [80, 100]:
+    for cols_rows in [30, 40, 45 , 50]:
         col_folder = sim_folder + '/colsRows_' + str(cols_rows)
         gen.create_folder(col_folder)
         parameters['Columns'] = cols_rows
@@ -291,9 +291,9 @@ def bash():
         os.mkdir(curr_folder+'/inhibitory_neurons')
     magic.simulationAndAnalysis(parameters, curr_folder)
 
-#automation()
+automation()
 #testSimulation()
-bash()
+#bash()
 
 #parameters = {'Name': 'inhibition',
 #              'Columns': 40,
