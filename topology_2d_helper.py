@@ -431,7 +431,7 @@ class RandomBalancedNetwork:
         nest.ResetKernel()
         nest.SetKernelStatus({"resolution": 0.1, "print_time": True,
                               "overwrite_files": True,
-                              "local_num_threads": 8
+                              "local_num_threads": 6
                              })
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
