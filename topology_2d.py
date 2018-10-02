@@ -10,12 +10,8 @@ import os
 import topology_2d_helper as magic
 
 
-base_folder = '/home/adrossel/Magic/figures/'
-<<<<<<< HEAD
-date_folder = '18_08_31/'
-=======
+base_folder = '/home/alex/Magic/figures/'
 date_folder = '18_09_06/'
->>>>>>> 20b8e2dd1ad003fa42282e66c7a958b0f34a7a13
 sub_folder = 'test/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -165,18 +161,14 @@ def automation():
                   'Time of stimulation': 500.,
                   'Time after Stimulation': 1000.,
                   }
-    radius_inhibs = [0.1, 0.2, 0.2, 0.1, 0.2]
-    sigma_inhibs = [0.075, 0.1, 0.1, 0.05, 0.75]
-    radius_excis = [0.1, 0.2, 0.1, 0.2, 0.1]
-    sigma_excis = [0.05, 0.1, 0.05, 0.1, 0.5]
-    weight_inhis = [-5., -5.0, -4.0, -10.0, -20.0]
-    weight_excis = [5., 5.0, 4.0, 10.0, 20.0]
+    radius_inhibs = [0.1, 0.2, 0.2, 0.2]
+    sigma_inhibs = [0.075, 0.1, 0.1, 0.75]
+    radius_excis = [0.1, 0.2, 0.1, 0.1]
+    sigma_excis = [0.05, 0.1, 0.05, 0.5]
+    weight_inhis = [-5., -5.0, -4.0, -20.0]
+    weight_excis = [5., 5.0, 4.0, 20.0]
     sim_folder = base_folder + date_folder
-<<<<<<< HEAD
     for cols_rows in [30, 40, 45 , 50]:
-=======
-    for cols_rows in [60, 80]:
->>>>>>> 20b8e2dd1ad003fa42282e66c7a958b0f34a7a13
         col_folder = sim_folder + '/colsRows_' + str(cols_rows)
         gen.create_folder(col_folder)
         parameters['Columns'] = cols_rows
