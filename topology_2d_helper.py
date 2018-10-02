@@ -128,10 +128,10 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
                 simulation = magic.RandomBalancedNetwork(parameters)
                 simulation.start_simulation()
                 simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+                stimulationControlLazy(simulation, curr_folder)
                 fanoFactorTimeLazy(simulation, curr_folder)
                 recordElectrodeEnviromentLazy(simulation, curr_folder)
                 spikeCountHistogramLazy(simulation, curr_folder)
-                stimulationControlLazy(simulation, curr_folder)
                 rasterPlotLazy(simulation, curr_folder)
 
 
@@ -482,11 +482,10 @@ class RandomBalancedNetwork:
                                'columns': 1,
                                'elements': 'poisson_generator'})
         stim_i = nest.GetLeaves(stim, local_only=True)[0]
-        stim_i = nest.GetLeaves(stim, local_only=True)[0]
         nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
         background_stim_dict = {'connection_type': 'divergent',
-                                'mask': {'grid': {'rows': self.parameters['Rows'],
-                                                  'columns': self.parameters['Columns']}},
+                                # 'mask': {'grid': {'rows': self.parameters['Rows'],
+                                                  # 'columns': self.parameters['Columns']}},
                                 'synapse_model': 'exc'}
         tp.ConnectLayers(stim, self.l, background_stim_dict)
         stim2 = tp.CreateLayer({'rows': 1,

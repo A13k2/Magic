@@ -19,11 +19,11 @@ pd.set_option('display.max_columns', 500)
 parameters = {'Name': 'inhibition',
               'Columns': 40,
               'Rows': 40,
-              'Excitational Weight': 40.0,
-              'Radius excitational': 0.15,
-              'Sigma excitational': 0.075,
-              'Inhibitory Weight': -25.0,
-              'Radius inhibitory': 0.1,
+              'Excitational Weight': 5.0,
+              'Radius excitational': 0.1,
+              'Sigma excitational': 0.05,
+              'Inhibitory Weight': -4.0,
+              'Radius inhibitory': 0.15,
               'Sigma inhibitory': 0.075,
               'Number excitational cells': 5,
               'Number inhibitory cells': 5,
@@ -31,14 +31,14 @@ parameters = {'Name': 'inhibition',
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
               'Stimulus rate': 40000.,
-              'Background rate': 85000.,
+              'Background rate': 25000.,
               'Time before stimulation': 1000.,
               'Time of stimulation': 500.,
               'Time after Stimulation': 1000.,
               }
 
 def test():
-    curr_folder = all_folder + "test8"
+    curr_folder = all_folder + "test15"
     if not os.path.exists(curr_folder):
         os.mkdir(curr_folder)
         os.mkdir(curr_folder+'/excitatory_neurons')
