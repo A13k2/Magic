@@ -110,6 +110,7 @@ def recordElectrodeEnviromentLazy(network, folder):
         plt.savefig(folder + '/inhibitory_neurons/electrode_enviroment' + str(round(position[0], 4)) + ', ' + str(round(position[1], 4)) + '.png',
                     dpi=300)
 
+
 def rasterPlotLazy(network, folder):
     """
     Creates Raster Plots for excitatory an inhibitory neurons of the given network.
@@ -132,6 +133,7 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
                 spikeCountHistogramLazy(simulation, curr_folder)
                 stimulationControlLazy(simulation, curr_folder)
                 rasterPlotLazy(simulation, curr_folder)
+
 
 def distanceFiringRate(eventSenders, ctr, min=0, max=0.5, bins=5, neurons_per_gridpoint=8, title='Firing Rate vs. Distance', gridSize=400):
     """
@@ -273,6 +275,7 @@ def fanoFactorNew(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
     """
     x, y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
     return np.var(y)/np.mean(y)
+
 
 def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
     """
@@ -524,8 +527,8 @@ class RandomBalancedNetwork:
         rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
         self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
         self.events_in = nest.GetStatus(rec_in_true, "events")[0]
-        self.df_ex = magic.makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
-        self.df_in = magic.makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
+        self.df_ex = makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
+        self.df_in = makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
 
     def writeParametersToFile(self, file):
         """
