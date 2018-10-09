@@ -163,25 +163,32 @@ def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05):
     def calculateAverageFiringRate(df):
         numberNeurons = len(np.unique(df['Sender']))
         return len(df)/float(numberNeurons*(warmUpTime/1000.))
+    def splitDataFrame(df):
+        df_local = df[df['Distance from Center'] < 0.1]
+        df_interm = df[df['Distance from Center'] > 0.1]
+        df_interm = df_interm[df_interm['Distance from Center'] < 0.3]
+        df_distal = df[df['Distance from Center'] > 0.3]
+        return [df_local, df_interm, df_distal]
     df_warmUp = df[df['Time'] < warmUpTime]
     averageFiringRate = calculateAverageFiringRate(df_warmUp)
     df_afterStim = df[df['Time'] > warmUpTime+stimTime]
-    average = 0
-    decreased = 0
-    increased = 0
-    for neuron_id in np.unique(df_afterStim['Sender']):
-        firingRate = len(df_afterStim[df_afterStim['Sender'] == neuron_id])/(afterTime/1000.)
-        firingDifference = firingRate/averageFiringRate
-        if (firingDifference > 1.+percChange):
-            increased += 1
-        elif(firingDifference < 1.-percChange):
-            decreased += 1
-        else:
-            average += 1
-    print("Average firing rate:", averageFiringRate)
-    print("Number of Neurons with normal Firing Rate: ", average)
-    print("Number of Neurons with decreased Firing Rate: ", decreased)
-    print("Number of Neurons with increased Firing Rate: ", increased)
+    for df_current in splitDataFrame(df_afterStim):
+        average = 0
+        decreased = 0
+        increased = 0
+        for neuron_id in np.unique(df_current['Sender']):
+            firingRate = len(df_current[df_current['Sender'] == neuron_id])/(afterTime/1000.)
+            firingDifference = firingRate/averageFiringRate
+            if (firingDifference > 1.+percChange):
+                increased += 1
+            elif(firingDifference < 1.-percChange):
+                decreased += 1
+            else:
+                average += 1
+        print("Average firing rate:", averageFiringRate)
+        print("Number of Neurons with normal Firing Rate: ", average)
+        print("Number of Neurons with decreased Firing Rate: ", decreased)
+        print("Number of Neurons with increased Firing Rate: ", increased)
 
 
 
