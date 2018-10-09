@@ -151,12 +151,12 @@ def clusteringPlotLazy(network, parameters):
     clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.1)
     print("Inhibitory Neurons:")
     clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.1)
-    print("Change of +- 20%: ")
+    print("Change of +- 30%: ")
     print("------------------")
     print("Excitatory Neurons:")
-    clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.2)
+    clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.3)
     print("Inhibitory Neurons:")
-    clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.2)
+    clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.3)
 
 
 def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05):
@@ -168,6 +168,7 @@ def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05):
         df_interm = df[df['Distance from Center'] > 0.1]
         df_interm = df_interm[df_interm['Distance from Center'] < 0.3]
         df_distal = df[df['Distance from Center'] > 0.3]
+        df_distal = df_distal[df_distal['Distance from Center'] < 0.5]
         return [df_local, df_interm, df_distal]
     df_warmUp = df[df['Time'] < warmUpTime]
     averageFiringRate = calculateAverageFiringRate(df_warmUp)
@@ -186,9 +187,9 @@ def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05):
             else:
                 average += 1
         print("Average firing rate:", averageFiringRate)
-        print("Number of Neurons with normal Firing Rate: ", average)
-        print("Number of Neurons with decreased Firing Rate: ", decreased)
-        print("Number of Neurons with increased Firing Rate: ", increased)
+        print("Number of Neurons with normal Firing Rate: ", average, " (", float(average)/float(average+decreased+increased), ")")
+        print("Number of Neurons with decreased Firing Rate: ", decreased, " (", float(decreased)/float(average+decreased+increased), ")")
+        print("Number of Neurons with increased Firing Rate: ", increased, " (", float(increased)/float(average+decreased+increased), ")")
 
 
 
