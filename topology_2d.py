@@ -11,34 +11,34 @@ import topology_2d_helper as magic
 
 
 base_folder = '/home/adrossel/Magic/figures/'
-date_folder = '18_10_01/'
-sub_folder = 'test/'
+date_folder = '18_10_09/'
+sub_folder = 'tests/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
 
 parameters = {'Name': 'inhibition',
-              'Columns': 40,
-              'Rows': 40,
+              'Columns': 80,
+              'Rows': 80,
               'Excitational Weight': 5.0,
-              'Radius excitational': 0.1,
-              'Sigma excitational': 0.05,
+              'Radius excitational': 0.05,
+              'Sigma excitational': 0.025,
               'Inhibitory Weight': -4.0,
-              'Radius inhibitory': 0.15,
-              'Sigma inhibitory': 0.075,
+              'Radius inhibitory': 0.075,
+              'Sigma inhibitory': 0.0375,
               'Number excitational cells': 5,
               'Number inhibitory cells': 5,
               'Weight Stimulus': -3000.,
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
               'Stimulus rate': 40000.,
-              'Background rate': 25000.,
+              'Background rate': 19000.,
               'Time before stimulation': 1000.,
               'Time of stimulation': 500.,
               'Time after Stimulation': 1000.,
               }
 
 def test():
-    curr_folder = all_folder + "test15"
+    curr_folder = all_folder + "new"
     if not os.path.exists(curr_folder):
         os.mkdir(curr_folder)
         os.mkdir(curr_folder+'/excitatory_neurons')

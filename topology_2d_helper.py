@@ -11,7 +11,6 @@ import matplotlib.animation as animation
 import topology_2d_helper as magic
 
 
-
 def distancePlotsLazy(Start, End, Step, network, folder):
     for events, title, neurons_folder in zip([network.events_ex, network.events_in], ["Excitatory", "Inhibitory"], ['/excitatory_neurons', '/inhibitory_neurons']):
         for start, end in zip(np.arange(Start, End, Step), np.arange(Start + Step, End + Step, Step)):
@@ -129,10 +128,62 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
                 simulation.start_simulation()
                 simulation.writeParametersToFile(curr_folder + '/parameters.txt')
                 stimulationControlLazy(simulation, curr_folder)
-                fanoFactorTimeLazy(simulation, curr_folder)
-                recordElectrodeEnviromentLazy(simulation, curr_folder)
-                spikeCountHistogramLazy(simulation, curr_folder)
-                rasterPlotLazy(simulation, curr_folder)
+                # fanoFactorTimeLazy(simulation, curr_folder)
+                # recordElectrodeEnviromentLazy(simulation, curr_folder)
+                # spikeCountHistogramLazy(simulation, curr_folder)
+                # rasterPlotLazy(simulation, curr_folder)
+                clusteringPlotLazy(simulation, parameters)
+                # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
+
+def clusteringPlotLazy(network, parameters):
+    """
+    Plots clustering
+    """
+    print("Change of +- 5%: ")
+    print("------------------")
+    print("Excitatory Neurons:")
+    clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.05)
+    print("Inhibitory Neurons:")
+    clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.05)
+    print("Change of +- 10%: ")
+    print("------------------")
+    print("Excitatory Neurons:")
+    clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.1)
+    print("Inhibitory Neurons:")
+    clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.1)
+    print("Change of +- 20%: ")
+    print("------------------")
+    print("Excitatory Neurons:")
+    clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.2)
+    print("Inhibitory Neurons:")
+    clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.2)
+
+
+def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05):
+    def calculateAverageFiringRate(df):
+        numberNeurons = len(np.unique(df['Sender']))
+        return len(df)/float(numberNeurons*(warmUpTime/1000.))
+    df_warmUp = df[df['Time'] < warmUpTime]
+    averageFiringRate = calculateAverageFiringRate(df_warmUp)
+    df_afterStim = df[df['Time'] > warmUpTime+stimTime]
+    average = 0
+    decreased = 0
+    increased = 0
+    for neuron_id in np.unique(df_afterStim['Sender']):
+        firingRate = len(df_afterStim[df_afterStim['Sender'] == neuron_id])/(afterTime/1000.)
+        firingDifference = firingRate/averageFiringRate
+        if (firingDifference > 1.+percChange):
+            increased += 1
+        elif(firingDifference < 1.-percChange):
+            decreased += 1
+        else:
+            average += 1
+    print("Average firing rate:", averageFiringRate)
+    print("Number of Neurons with normal Firing Rate: ", average)
+    print("Number of Neurons with decreased Firing Rate: ", decreased)
+    print("Number of Neurons with increased Firing Rate: ", increased)
+
+
 
 
 def distanceFiringRate(eventSenders, ctr, min=0, max=0.5, bins=5, neurons_per_gridpoint=8, title='Firing Rate vs. Distance', gridSize=400):
