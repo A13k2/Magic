@@ -1,17 +1,14 @@
 import sys
 import general_helper as gen
-import nest.topology as tp
 import matplotlib
 matplotlib.use('Agg')
-import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import topology_2d_helper as magic
 
 
 base_folder = '/home/adrossel/Magic/figures/'
-date_folder = '18_10_09/'
+date_folder = '18_10_17/'
 sub_folder = 'tests/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -19,26 +16,31 @@ pd.set_option('display.max_columns', 500)
 parameters = {'Name': 'inhibition',
               'Columns': 80,
               'Rows': 80,
-              'Excitational Weight': 5.0,
-              'Radius excitational': 0.05,
-              'Sigma excitational': 0.025,
-              'Inhibitory Weight': -4.0,
-              'Radius inhibitory': 0.075,
-              'Sigma inhibitory': 0.0375,
-              'Number excitational cells': 5,
-              'Number inhibitory cells': 5,
+              'Excitational Weight': 4.0,
+              'Radius excitational': 0.1,
+              'Sigma excitational': 0.05,
+              'Inhibitory Weight': -16.0,
+              'Radius inhibitory': 0.1,
+              'Sigma inhibitory': 0.05,
+              'Number excitational cells': 8,
+              'Number inhibitory cells': 2,
               'Weight Stimulus': -3000.,
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
+              'e2e delay': 2.0,
+              'e2i delay': 3.0,
+              'i2e delay': 3.0,
+              'i2i delay': 2.0,
+              'delay growth multiplier': 3,
               'Stimulus rate': 40000.,
-              'Background rate': 19000.,
+              'Background rate': 25000.,
               'Time before stimulation': 1000.,
               'Time of stimulation': 500.,
               'Time after Stimulation': 1000.,
               }
 
 def test():
-    curr_folder = all_folder + "new"
+    curr_folder = all_folder + "uniform_weights2"
     if not os.path.exists(curr_folder):
         os.mkdir(curr_folder)
         os.mkdir(curr_folder+'/excitatory_neurons')
@@ -81,12 +83,12 @@ def automation():
 
 
 def testSimulation():
-    radius_excis =  [0.1, 0.2, 0.1, 0.2, 0.1]
+    radius_excis = [0.1, 0.2, 0.1, 0.2, 0.1]
     radius_inhibs = [0.1, 0.2, 0.2, 0.1, 0.2]
-    sigma_excis =   [0.05, 0.1, 0.05, 0.1, 0.5]
-    sigma_inhibs =  [0.075, 0.1, 0.1, 0.05, 0.75]
-    weight_inhis =  [-5., -5.0, -4.0, -10.0, -20.0]
-    weight_excis =  [5., 5.0, 4.0, 10.0, 20.0]
+    sigma_excis = [0.05, 0.1, 0.05, 0.1, 0.5]
+    sigma_inhibs = [0.075, 0.1, 0.1, 0.05, 0.75]
+    weight_inhis = [-5., -5.0, -4.0, -10.0, -20.0]
+    weight_excis = [5., 5.0, 4.0, 10.0, 20.0]
     sim_folder = base_folder + date_folder
     for cols_rows in [80]:
         col_folder = sim_folder + '/colsRows_' + str(cols_rows)
@@ -97,7 +99,8 @@ def testSimulation():
             background_folder = col_folder + '/background_' + str(background_rate)
             gen.create_folder(background_folder)
             parameters['Background rate'] = background_rate
-            for radius_inhib, sigma_inhib, radius_exci, sigma_exci, weight_inhi, weight_exci  in zip(radius_inhibs, sigma_inhibs, radius_excis, sigma_excis, weight_inhis, weight_excis):
+            for radius_inhib, sigma_inhib, radius_exci, sigma_exci, weight_inhi, weight_exci in zip(radius_inhibs,
+                                                sigma_inhibs, radius_excis, sigma_excis, weight_inhis, weight_excis):
                 name = "inh_(" + str(radius_inhib) + "," + str(sigma_inhib) + ")_exci_(" + str(radius_exci) + "," + str(sigma_exci) + "_wight_inhi_" + str(weight_inhi) + "weight_exci_" + str(weight_exci) + ")"
                 curr_folder = background_folder + '/' + name
                 if not os.path.exists(curr_folder):

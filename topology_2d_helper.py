@@ -1,5 +1,5 @@
 import nest
-import gc
+import os
 import nest.topology as tp
 import numpy as np
 import matplotlib
@@ -7,7 +7,6 @@ matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 import nest.raster_plot
 import pandas as pd
-import matplotlib.animation as animation
 import topology_2d_helper as magic
 
 
@@ -27,7 +26,7 @@ def stimulationControlLazy(network, folder):
     for df, title, neurons_folder in zip([network.df_ex, network.df_in], ['Excitatory', 'Inhibitory'], ['/excitatory_neurons', '/inhibitory_neurons']):
         df_before_stim = df[df['Time'] <= network.parameters['Time before stimulation']]
         plt.close()
-        magic.visualization(df_before_stim, title + ' Neurons before stimulation, ' + network.parameters['Name'])
+        magic.visualization(df_before_stim, title + ' Neurons before inhibition, ' + network.parameters['Name'])
         plt.savefig(folder + neurons_folder + '/visu_before_stim_' + title + '_neurons.png',
                     dpi=300)
         df_while_stim = df[df['Time'] > network.parameters['Time before stimulation']]
@@ -35,13 +34,13 @@ def stimulationControlLazy(network, folder):
             df_while_stim['Time'] <= network.parameters['Time before stimulation'] + network.parameters[
                 'Time of stimulation']]
         plt.close()
-        magic.visualization(df_while_stim, title + ' Neurons while stimulation, ' + network.parameters['Name'])
+        magic.visualization(df_while_stim, title + ' Neurons while inhibition, ' + network.parameters['Name'])
         plt.savefig(folder + neurons_folder + '/visu_while_stim_' + title + '_neurons.png',
                     dpi=300)
         df_after_stim = df[
             df['Time'] > network.parameters['Time before stimulation'] + network.parameters['Time of stimulation']]
         plt.close()
-        magic.visualization(df_after_stim, title + ' Neurons after stimulation, ' + network.parameters['Name'])
+        magic.visualization(df_after_stim, title + ' Neurons after inhibition, ' + network.parameters['Name'])
         plt.savefig(folder + neurons_folder + '/visu_after_stim_' + title + '_neurons.png',
                     dpi=300)
 
@@ -123,62 +122,163 @@ def rasterPlotLazy(network, folder):
     plt.savefig(folder + '/inhibitory_neurons/raster.png', dpi=300)
 
 
+def makeDir(folder):
+    if not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+
+
 def simulationAndAnalysis(parameters, curr_folder='.'):
                 simulation = magic.RandomBalancedNetwork(parameters)
                 simulation.start_simulation()
                 simulation.writeParametersToFile(curr_folder + '/parameters.txt')
                 stimulationControlLazy(simulation, curr_folder)
-                # fanoFactorTimeLazy(simulation, curr_folder)
-                # recordElectrodeEnviromentLazy(simulation, curr_folder)
-                # spikeCountHistogramLazy(simulation, curr_folder)
-                # rasterPlotLazy(simulation, curr_folder)
-                clusteringPlotLazy(simulation, parameters)
+                clusteringPlotLazy(simulation, parameters, curr_folder)
+                fanoFactorTimeLazy(simulation, curr_folder)
+                recordElectrodeEnviromentLazy(simulation, curr_folder)
+                spikeCountHistogramLazy(simulation, curr_folder)
+                rasterPlotLazy(simulation, curr_folder)
                 # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
 
-def clusteringPlotLazy(network, parameters):
+def clusteringPlotLazy(network, parameters, folder):
     """
     Plots clustering
     """
-    print("Change of +- 5%: ")
-    print("------------------")
-    print("Excitatory Neurons:")
-    clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.05)
-    print("Inhibitory Neurons:")
-    clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.05)
-    print("Change of +- 10%: ")
-    print("------------------")
-    print("Excitatory Neurons:")
-    clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.1)
-    print("Inhibitory Neurons:")
-    clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.1)
-    print("Change of +- 30%: ")
-    print("------------------")
-    print("Excitatory Neurons:")
-    clusteringPlot(network.df_ex, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.3)
-    print("Inhibitory Neurons:")
-    clusteringPlot(network.df_in, parameters['Time before stimulation'], parameters['Time of stimulation'], parameters['Time after Stimulation'], percChange=0.3)
+    def worker1(percentage, folder):
+        increased, average, decreased = clusteringPlot(network.df_ex, parameters['Time before stimulation'], 1000., 1500., percChange=percentage)
+        exc_folder_during = folder+'/excitatory_neurons/barplots/during/'
+        makeDir(exc_folder_during)
+        exc_folder_after = folder+'/excitatory_neurons/barplots/after/'
+        makeDir(exc_folder_after)
+        combinedBarPlot(average, increased, decreased, exc_folder_during+str(percentage)+'.png')
+        increased, average, decreased = clusteringPlot(network.df_in, parameters['Time before stimulation'], 1000., 1500., percChange=percentage)
+        inh_folder_during = folder+'/inhibitory_neurons/barPlots/during/'
+        makeDir(inh_folder_during)
+        inh_folder_after = folder+'/inhibitory_neurons/barPlots/after/'
+        makeDir(inh_folder_after)
+        combinedBarPlot(average, increased, decreased, inh_folder_during+str(percentage)+'.png')
+        increased, average, decreased = clusteringPlot(network.df_ex, parameters['Time before stimulation'], 1500., 1700., percChange=percentage)
+        combinedBarPlot(average, increased, decreased, exc_folder_after+str(percentage)+'.png')
+        increased, average, decreased = clusteringPlot(network.df_in, parameters['Time before stimulation'], 1500., 1700., percChange=percentage)
+        combinedBarPlot(average, increased, decreased, inh_folder_after+str(percentage)+'.png')
+        return
+    for percentage in [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5]:
+        # t = threading.Thread(target=worker1, args=(percentage, file))
+        # t.start()
+        worker1(percentage, folder)
 
 
-def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05):
+def combinedBarPlot(average, increased, decreased, file):
+    plt.clf()
+    x = np.arange(3)
+    all0 = average[0] + increased[0] + decreased[0]
+    all1 = average[1] + increased[1] + decreased[1]
+    all2 = average[2] + increased[2] + decreased[2]
+    data0 = np.array([average[0]/all0*100., average[1]/all1*100., average[2]/all2*100.])
+    data1 = np.array([increased[0]/all0*100., increased[1]/all1*100., increased[2]/all2*100.])
+    data2 = np.array([decreased[0]/all0*100., decreased[1]/all1*100., decreased[2]/all2*100.])
+    p0 = plt.bar(x, data0)
+    p1 = plt.bar(x, data1, bottom=data0)
+    p2 = plt.bar(x, data2, bottom=data0+data1)
+    plt.xticks(x, ('loc.', 'interm.', 'dist.'))
+    plt.ylabel('% of all')
+    plt.legend((p0[0], p1[0], p2[0]), ('Average', 'Increased', 'Decreased'))
+    plt.savefig(file)
+
+
+
+def barplotCluster(average, increased, decreased, file="", save=False):
+    plt.clf()
+    x = np.arange(3)
+    all = average + increased + decreased
+    data = np.array([average, increased, decreased])
+    data = (data/all)*100.
+    p = plt.bar(x, data)
+    plt.xticks(x, ('avrg.', 'incr.', 'decr.'))
+    plt.ylabel(r'% of all ( ' + str(all) + r' )')
+    if save and file != "":
+        plt.savefig(file)
+    return plt
+
+
+
+# def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05, time=0.):
+#     if time == 0.:
+#         time = warmUpTime+stimTime+afterTime
+#     def calculateAverageFiringRate(df):
+#         numberNeurons = len(np.unique(df['Sender']))
+#         return len(df)/float(numberNeurons*(warmUpTime/1000.))
+#     def splitDataFrame(df):
+#         df_local = df[df['Distance from Center'] < 0.1]
+#         df_interm = df[df['Distance from Center'] > 0.1]
+#         df_interm = df_interm[df_interm['Distance from Center'] < 0.25]
+#         df_distal = df[df['Distance from Center'] > 0.25]
+#         df_distal = df_distal[df_distal['Distance from Center'] < 0.45]
+#         return [df_local, df_interm, df_distal]
+#     df_warmUp = df[df['Time'] < warmUpTime]
+#     averageFiringRate = calculateAverageFiringRate(df_warmUp)
+#     df_afterStim = df[df['Time'] > warmUpTime+stimTime]
+#     df_afterStim = df_afterStim[df_afterStim['Time'] < warmUpTime+stimTime+time]
+#     avr_array = []
+#     inc_array = []
+#     dec_array = []
+#     for df_current in splitDataFrame(df_afterStim):
+#         average = 0
+#         decreased = 0
+#         increased = 0
+#         for neuron_id in np.unique(df_current['Sender']):
+#             firingRate = len(df_current[df_current['Sender'] == neuron_id])/(time/1000.)
+#             firingDifference = firingRate/averageFiringRate
+#             if (firingDifference > 1.+percChange):
+#                 increased += 1
+#             elif(firingDifference < 1.-percChange):
+#                 decreased += 1
+#             else:
+#                 average += 1
+#         print("Average firing rate:", averageFiringRate)
+#         all_curr = float(average+decreased+increased)
+#         print("Number of Neurons with normal Firing Rate: ", average, " (", float(average)/all_curr, ", ", average , "/", all_curr, ")")
+#         print("Number of Neurons with decreased Firing Rate: ", decreased, " (", float(decreased)/all_curr, ", ", decreased , "/", all_curr, ")")
+#         print("Number of Neurons with increased Firing Rate: ", increased, " (", float(increased)/all_curr, ", ", increased , "/", all_curr, ")")
+#         avr_array.append(average)
+#         inc_array.append(increased)
+#         dec_array.append(decreased)
+#     return inc_array, avr_array, dec_array
+def clusteringPlot(df, warmUpTime, startRecord, stopRecord, percChange=0.05, startwarmUpTime=0.):
+    """
+    Makes "cluster Plots"
+    :param df:
+    :param warmUpTime: Time until stimulus/inhibitin is started
+    :param startRecord: Time to start recording (doesnt include warmup time)
+    :param stopRecord: Time to stop recording
+    :param percChange: percentage of change compared to average to classify increased & decreased
+    :param startwarmUpTime: Not yet implemented
+    :return:
+    """
     def calculateAverageFiringRate(df):
         numberNeurons = len(np.unique(df['Sender']))
         return len(df)/float(numberNeurons*(warmUpTime/1000.))
     def splitDataFrame(df):
         df_local = df[df['Distance from Center'] < 0.1]
         df_interm = df[df['Distance from Center'] > 0.1]
-        df_interm = df_interm[df_interm['Distance from Center'] < 0.3]
-        df_distal = df[df['Distance from Center'] > 0.3]
-        df_distal = df_distal[df_distal['Distance from Center'] < 0.5]
+        df_interm = df_interm[df_interm['Distance from Center'] < 0.25]
+        df_distal = df[df['Distance from Center'] > 0.25]
+        df_distal = df_distal[df_distal['Distance from Center'] < 0.45]
         return [df_local, df_interm, df_distal]
     df_warmUp = df[df['Time'] < warmUpTime]
     averageFiringRate = calculateAverageFiringRate(df_warmUp)
-    df_afterStim = df[df['Time'] > warmUpTime+stimTime]
-    for df_current in splitDataFrame(df_afterStim):
+    df_interest = df[df['Time'] > startRecord]
+    df_interest = df_interest[df_interest['Time'] < stopRecord]
+    avr_array = []
+    inc_array = []
+    dec_array = []
+    for df_current in splitDataFrame(df_interest):
+    # for df_current in splitDataFrame(df_afterStim):
         average = 0
         decreased = 0
         increased = 0
         for neuron_id in np.unique(df_current['Sender']):
-            firingRate = len(df_current[df_current['Sender'] == neuron_id])/(afterTime/1000.)
+            firingRate = len(df_current[df_current['Sender'] == neuron_id])/((stopRecord-startRecord)/1000.)
+            # firingRate = len(df_current[df_current['Sender'] == neuron_id])/(time/1000.)
             firingDifference = firingRate/averageFiringRate
             if (firingDifference > 1.+percChange):
                 increased += 1
@@ -187,9 +287,14 @@ def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05):
             else:
                 average += 1
         print("Average firing rate:", averageFiringRate)
-        print("Number of Neurons with normal Firing Rate: ", average, " (", float(average)/float(average+decreased+increased), ")")
-        print("Number of Neurons with decreased Firing Rate: ", decreased, " (", float(decreased)/float(average+decreased+increased), ")")
-        print("Number of Neurons with increased Firing Rate: ", increased, " (", float(increased)/float(average+decreased+increased), ")")
+        all_curr = float(average+decreased+increased)
+        print("Number of Neurons with normal Firing Rate: ", average, " (", float(average)/all_curr, ", ", average , "/", all_curr, ")")
+        print("Number of Neurons with decreased Firing Rate: ", decreased, " (", float(decreased)/all_curr, ", ", decreased , "/", all_curr, ")")
+        print("Number of Neurons with increased Firing Rate: ", increased, " (", float(increased)/all_curr, ", ", increased , "/", all_curr, ")")
+        avr_array.append(average)
+        inc_array.append(increased)
+        dec_array.append(decreased)
+    return inc_array, avr_array, dec_array
 
 
 
@@ -508,31 +613,35 @@ class RandomBalancedNetwork:
         cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
-                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'delays': {'linear': {'c': parameters['e2i delay'], 'a': parameters['e2i delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'exci'},
                      'targets': {'model': 'inhi'},
-                     'synapse_model': 'exc'}
+                     'synapse_model': 'exc',
+                     'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
         cdict_e2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
-                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'delays': {'linear': {'c': parameters['e2e delay'], 'a': parameters['e2e delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'exci'},
                      'targets': {'model': 'exci'},
-                     'synapse_model': 'exc'}
+                     'synapse_model': 'exc',
+                     'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
         cdict_i2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma inhibitory']}},
-                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'delays': {'linear': {'c': parameters['i2e delay'], 'a': parameters['i2e delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'inhi'},
                      'targets': {'model': 'exci'},
-                     'synapse_model': 'inh'}
+                     'synapse_model': 'inh',
+                     'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
         cdict_i2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
                      'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma inhibitory']}},
-                     'delays': {'linear': {'c': 2.0, 'a': 0.02}},
+                     'delays': {'linear': {'c': parameters['i2i delay'], 'a': parameters['i2i delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'inhi'},
                      'targets': {'model': 'inhi'},
-                     'synapse_model': 'inh'}
+                     'synapse_model': 'inh',
+                     'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
         tp.ConnectLayers(self.l, self.l, cdict_e2i)
         tp.ConnectLayers(self.l, self.l, cdict_e2e)
         tp.ConnectLayers(self.l, self.l, cdict_i2i)
