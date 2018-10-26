@@ -9,6 +9,8 @@ import nest.raster_plot
 import pandas as pd
 import topology_2d_helper as magic
 
+def linear(x,a,b):
+    return a+x*b
 
 def gaussian(x, mu, sig, maximum=1.):
     return maximum*np.exp(-np.power(x - mu, 2.) / (2. * np.power(sig, 2.)))
@@ -132,19 +134,20 @@ def makeDir(folder):
 
 
 def simulationAndAnalysis(parameters, curr_folder='.'):
+                delay_visualisation_linear(parameters, curr_folder+'/delayllpdf')
                 weightVisualisation(parameters, curr_folder+'/weights.pdf')
-                simulation = magic.RandomBalancedNetwork(parameters)
-                simulation.start_simulation()
-                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
-                makeDir(curr_folder+'/excitatory_neurons')
-                makeDir(curr_folder+'/inhibitory_neurons')
-                stimulationControlLazy(simulation, curr_folder)
-                clusteringPlotLazy(simulation, parameters, curr_folder)
-                fanoFactorTimeLazy(simulation, curr_folder)
-                recordElectrodeEnviromentLazy(simulation, curr_folder)
-                spikeCountHistogramLazy(simulation, curr_folder)
-                rasterPlotLazy(simulation, curr_folder)
-                # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
+                # simulation = magic.RandomBalancedNetwork(parameters)
+                # simulation.start_simulation()
+                # simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+                # makeDir(curr_folder+'/excitatory_neurons')
+                # makeDir(curr_folder+'/inhibitory_neurons')
+                # stimulationControlLazy(simulation, curr_folder)
+                # clusteringPlotLazy(simulation, parameters, curr_folder)
+                # fanoFactorTimeLazy(simulation, curr_folder)
+                # recordElectrodeEnviromentLazy(simulation, curr_folder)
+                # spikeCountHistogramLazy(simulation, curr_folder)
+                # rasterPlotLazy(simulation, curr_folder)
+                # # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
 
 
 def weightVisualisation(parameters, file):
@@ -159,6 +162,27 @@ def weightVisualisation(parameters, file):
     plt.ylabel('Probability of Connection')
     plt.savefig(file)
 
+def delay_visualisation_linear(parameters, file):
+    plt.clf()
+    x = np.arange(-0.,0.51,0.01)
+    plt.figure(1)
+    ax1 = plt.subplot(211)
+    plt.title('Delay growth')
+    plt.plot(x, linear(x, parameters['e2e delay'],
+                       parameters['delay growth multiplier']*parameters['e2e delay']), label='e2e')
+    plt.plot(x, linear(x, parameters['e2i delay'],
+                       parameters['delay growth multiplier']*parameters['e2i delay']), label='e2i')
+    plt.ylabel('Delay in ms')
+    plt.legend()
+    ax2 = plt.subplot(212, sharex=ax1)
+    plt.plot(x, linear(x, parameters['i2i delay'],
+                       parameters['delay growth multiplier']*parameters['i2i delay']), label='i2i')
+    plt.plot(x, linear(x, parameters['i2e delay'],
+                       parameters['delay growth multiplier']*parameters['i2e delay']), label='i2e')
+    plt.ylabel('Delay in ms')
+    plt.xlabel('Distance from Neuron')
+    plt.legend()
+    plt.savefig(file)
 
 
 
