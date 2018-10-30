@@ -134,20 +134,20 @@ def makeDir(folder):
 
 
 def simulationAndAnalysis(parameters, curr_folder='.'):
-                delay_visualisation_linear(parameters, curr_folder+'/delayllpdf')
+                delay_visualisation_linear(parameters, curr_folder+'/delay.png')
                 weightVisualisation(parameters, curr_folder+'/weights.pdf')
-                # simulation = magic.RandomBalancedNetwork(parameters)
-                # simulation.start_simulation()
-                # simulation.writeParametersToFile(curr_folder + '/parameters.txt')
-                # makeDir(curr_folder+'/excitatory_neurons')
-                # makeDir(curr_folder+'/inhibitory_neurons')
-                # stimulationControlLazy(simulation, curr_folder)
-                # clusteringPlotLazy(simulation, parameters, curr_folder)
-                # fanoFactorTimeLazy(simulation, curr_folder)
-                # recordElectrodeEnviromentLazy(simulation, curr_folder)
-                # spikeCountHistogramLazy(simulation, curr_folder)
-                # rasterPlotLazy(simulation, curr_folder)
-                # # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
+                simulation = magic.RandomBalancedNetwork(parameters)
+                simulation.start_simulation()
+                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+                makeDir(curr_folder+'/excitatory_neurons')
+                makeDir(curr_folder+'/inhibitory_neurons')
+                stimulationControlLazy(simulation, curr_folder)
+                clusteringPlotLazy(simulation, parameters, curr_folder)
+                fanoFactorTimeLazy(simulation, curr_folder)
+                recordElectrodeEnviromentLazy(simulation, curr_folder)
+                spikeCountHistogramLazy(simulation, curr_folder)
+                rasterPlotLazy(simulation, curr_folder)
+                # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
 
 
 def weightVisualisation(parameters, file):
