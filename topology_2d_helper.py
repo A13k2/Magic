@@ -9,6 +9,12 @@ import nest.raster_plot
 import pandas as pd
 import topology_2d_helper as magic
 
+def linear(x,a,b):
+    return a+x*b
+
+def gaussian(x, mu, sig, maximum=1.):
+    return maximum*np.exp(-np.power(x - mu, 2.) / (2. * np.power(sig, 2.)))
+
 
 def distancePlotsLazy(Start, End, Step, network, folder):
     for events, title, neurons_folder in zip([network.events_ex, network.events_in], ["Excitatory", "Inhibitory"], ['/excitatory_neurons', '/inhibitory_neurons']):
@@ -128,9 +134,13 @@ def makeDir(folder):
 
 
 def simulationAndAnalysis(parameters, curr_folder='.'):
+                delay_visualisation_linear(parameters, curr_folder+'/delay.png')
+                weightVisualisation(parameters, curr_folder+'/weights.pdf')
                 simulation = magic.RandomBalancedNetwork(parameters)
                 simulation.start_simulation()
                 simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+                makeDir(curr_folder+'/excitatory_neurons')
+                makeDir(curr_folder+'/inhibitory_neurons')
                 stimulationControlLazy(simulation, curr_folder)
                 clusteringPlotLazy(simulation, parameters, curr_folder)
                 fanoFactorTimeLazy(simulation, curr_folder)
@@ -138,6 +148,43 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
                 spikeCountHistogramLazy(simulation, curr_folder)
                 rasterPlotLazy(simulation, curr_folder)
                 # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
+
+
+def weightVisualisation(parameters, file):
+    plt.clf()
+    x = np.arange(-0.5,0.51,0.01)
+    plt.plot(x, gaussian(x, 0., parameters['Sigma excitational'], maximum=parameters['Excitatory Weight Maximum']), label='Excitational')
+    plt.plot(x, gaussian(x, 0., parameters['Sigma inhibitory'], maximum=parameters['Inhibitory Weight Maximum']), label='Inhibitory')
+    plt.plot(x, gaussian(x, 0., parameters['Sigma excitational'], maximum=parameters['Excitatory Weight Maximum'])-gaussian(x, 0., parameters['Sigma inhibitory'], maximum=parameters['Inhibitory Weight Maximum']), label='Excitational - Inhibitory')
+    plt.title('Weight Distribution')
+    plt.legend()
+    plt.xlabel('Distance from Neuron')
+    plt.ylabel('Probability of Connection')
+    plt.savefig(file)
+
+def delay_visualisation_linear(parameters, file):
+    plt.clf()
+    x = np.arange(-0.,0.51,0.01)
+    plt.figure(1)
+    ax1 = plt.subplot(211)
+    plt.title('Delay growth')
+    plt.plot(x, linear(x, parameters['e2e delay'],
+                       parameters['delay growth multiplier']*parameters['e2e delay']), label='e2e')
+    plt.plot(x, linear(x, parameters['e2i delay'],
+                       parameters['delay growth multiplier']*parameters['e2i delay']), label='e2i')
+    plt.ylabel('Delay in ms')
+    plt.legend()
+    ax2 = plt.subplot(212, sharex=ax1)
+    plt.plot(x, linear(x, parameters['i2i delay'],
+                       parameters['delay growth multiplier']*parameters['i2i delay']), label='i2i')
+    plt.plot(x, linear(x, parameters['i2e delay'],
+                       parameters['delay growth multiplier']*parameters['i2e delay']), label='i2e')
+    plt.ylabel('Delay in ms')
+    plt.xlabel('Distance from Neuron')
+    plt.legend()
+    plt.savefig(file)
+
+
 
 def clusteringPlotLazy(network, parameters, folder):
     """
@@ -571,7 +618,7 @@ class RandomBalancedNetwork:
                                  'edge_wrap': False})
         cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
-                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
+                     'kernel': {'gaussian': {'p_center': parameters['Excitatory Weight Maximum'], 'sigma': self.parameters['Sigma excitational']}},
                      'delays': {'linear': {'c': parameters['e2i delay'], 'a': parameters['e2i delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'exci'},
                      'targets': {'model': 'inhi'},
@@ -579,7 +626,7 @@ class RandomBalancedNetwork:
                      'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
         cdict_e2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
-                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma excitational']}},
+                     'kernel': {'gaussian': {'p_center': parameters['Excitatory Weight Maximum'], 'sigma': self.parameters['Sigma excitational']}},
                      'delays': {'linear': {'c': parameters['e2e delay'], 'a': parameters['e2e delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'exci'},
                      'targets': {'model': 'exci'},
@@ -587,7 +634,7 @@ class RandomBalancedNetwork:
                      'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
         cdict_i2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
-                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma inhibitory']}},
+                     'kernel': {'gaussian': {'p_center': parameters['Inhibitory Weight Maximum'], 'sigma': self.parameters['Sigma inhibitory']}},
                      'delays': {'linear': {'c': parameters['i2e delay'], 'a': parameters['i2e delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'inhi'},
                      'targets': {'model': 'exci'},
@@ -595,7 +642,7 @@ class RandomBalancedNetwork:
                      'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
         cdict_i2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
-                     'kernel': {'gaussian': {'p_center': 0.8, 'sigma': self.parameters['Sigma inhibitory']}},
+                     'kernel': {'gaussian': {'p_center': parameters['Inhibitory Weight Maximum'], 'sigma': self.parameters['Sigma inhibitory']}},
                      'delays': {'linear': {'c': parameters['i2i delay'], 'a': parameters['i2i delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'inhi'},
                      'targets': {'model': 'inhi'},

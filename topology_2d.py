@@ -7,8 +7,8 @@ import matplotlib
 matplotlib.use('Agg')
 
 
-base_folder = '/home/adrossel/Magic/figures/'
-date_folder = '18_10_17/'
+base_folder = '/home/alex/Magic/figures/'
+date_folder = '18_10_30/'
 sub_folder = 'tests/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
@@ -17,21 +17,31 @@ parameters = {'Name': 'inhibition',
               'Columns': 80,
               'Rows': 80,
               'Excitational Weight': 4.0,
-              'Radius excitational': 0.1,
+              'Radius excitational': 0.5,
               'Sigma excitational': 0.05,
               'Inhibitory Weight': -16.0,
-              'Radius inhibitory': 0.1,
-              'Sigma inhibitory': 0.05,
+              'Radius inhibitory': 0.5,
+              'Sigma inhibitory': 0.1,
+              'Excitatory Weight Maximum': 0.8,
+              'Inhibitory Weight Maximum': 0.2,
               'Number excitational cells': 8,
               'Number inhibitory cells': 2,
               'Weight Stimulus': -3000.,
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
-              'e2e delay': 2.0,
+              'e2e delay': 3.0,
               'e2i delay': 3.0,
               'i2e delay': 3.0,
+<<<<<<< HEAD
               'i2i delay': 2.0,
               'delay growth multiplier': 3.,
+||||||| merged common ancestors
+              'i2i delay': 2.0,
+              'delay growth multiplier': 3,
+=======
+              'i2i delay': 3.0,
+              'delay growth multiplier': 3,
+>>>>>>> refs/remotes/origin/master
               'Stimulus rate': 40000.,
               'Background rate': 20000.,
               'Time before stimulation': 1000.,
@@ -40,7 +50,13 @@ parameters = {'Name': 'inhibition',
               }
 
 def test():
+<<<<<<< HEAD
     curr_folder = all_folder + "uniform_weights4"
+||||||| merged common ancestors
+    curr_folder = all_folder + "uniform_weights2"
+=======
+    curr_folder = all_folder + "test2"
+>>>>>>> refs/remotes/origin/master
     if not os.path.exists(curr_folder):
         os.mkdir(curr_folder)
         os.mkdir(curr_folder+'/excitatory_neurons')
