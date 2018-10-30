@@ -1,10 +1,10 @@
+import pandas as pd
+import os
+import topology_2d_helper as magic
 import sys
 import general_helper as gen
 import matplotlib
 matplotlib.use('Agg')
-import pandas as pd
-import os
-import topology_2d_helper as magic
 
 
 base_folder = '/home/adrossel/Magic/figures/'
@@ -31,16 +31,16 @@ parameters = {'Name': 'inhibition',
               'e2i delay': 3.0,
               'i2e delay': 3.0,
               'i2i delay': 2.0,
-              'delay growth multiplier': 3,
+              'delay growth multiplier': 3.,
               'Stimulus rate': 40000.,
-              'Background rate': 25000.,
+              'Background rate': 20000.,
               'Time before stimulation': 1000.,
               'Time of stimulation': 500.,
               'Time after Stimulation': 1000.,
               }
 
 def test():
-    curr_folder = all_folder + "uniform_weights2"
+    curr_folder = all_folder + "uniform_weights4"
     if not os.path.exists(curr_folder):
         os.mkdir(curr_folder)
         os.mkdir(curr_folder+'/excitatory_neurons')

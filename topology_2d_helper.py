@@ -200,49 +200,6 @@ def barplotCluster(average, increased, decreased, file="", save=False):
     return plt
 
 
-
-# def clusteringPlot(df, warmUpTime, stimTime, afterTime, percChange=0.05, time=0.):
-#     if time == 0.:
-#         time = warmUpTime+stimTime+afterTime
-#     def calculateAverageFiringRate(df):
-#         numberNeurons = len(np.unique(df['Sender']))
-#         return len(df)/float(numberNeurons*(warmUpTime/1000.))
-#     def splitDataFrame(df):
-#         df_local = df[df['Distance from Center'] < 0.1]
-#         df_interm = df[df['Distance from Center'] > 0.1]
-#         df_interm = df_interm[df_interm['Distance from Center'] < 0.25]
-#         df_distal = df[df['Distance from Center'] > 0.25]
-#         df_distal = df_distal[df_distal['Distance from Center'] < 0.45]
-#         return [df_local, df_interm, df_distal]
-#     df_warmUp = df[df['Time'] < warmUpTime]
-#     averageFiringRate = calculateAverageFiringRate(df_warmUp)
-#     df_afterStim = df[df['Time'] > warmUpTime+stimTime]
-#     df_afterStim = df_afterStim[df_afterStim['Time'] < warmUpTime+stimTime+time]
-#     avr_array = []
-#     inc_array = []
-#     dec_array = []
-#     for df_current in splitDataFrame(df_afterStim):
-#         average = 0
-#         decreased = 0
-#         increased = 0
-#         for neuron_id in np.unique(df_current['Sender']):
-#             firingRate = len(df_current[df_current['Sender'] == neuron_id])/(time/1000.)
-#             firingDifference = firingRate/averageFiringRate
-#             if (firingDifference > 1.+percChange):
-#                 increased += 1
-#             elif(firingDifference < 1.-percChange):
-#                 decreased += 1
-#             else:
-#                 average += 1
-#         print("Average firing rate:", averageFiringRate)
-#         all_curr = float(average+decreased+increased)
-#         print("Number of Neurons with normal Firing Rate: ", average, " (", float(average)/all_curr, ", ", average , "/", all_curr, ")")
-#         print("Number of Neurons with decreased Firing Rate: ", decreased, " (", float(decreased)/all_curr, ", ", decreased , "/", all_curr, ")")
-#         print("Number of Neurons with increased Firing Rate: ", increased, " (", float(increased)/all_curr, ", ", increased , "/", all_curr, ")")
-#         avr_array.append(average)
-#         inc_array.append(increased)
-#         dec_array.append(decreased)
-#     return inc_array, avr_array, dec_array
 def clusteringPlot(df, warmUpTime, startRecord, stopRecord, percChange=0.05, startwarmUpTime=0.):
     """
     Makes "cluster Plots"
@@ -604,6 +561,8 @@ class RandomBalancedNetwork:
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
         nest.CopyModel('static_synapse', 'inh', {'weight': self.parameters['Inhibitory Weight']})
+        # nest.CopyModel('static_synapse', 'exc')
+        # nest.CopyModel('static_synapse', 'inh')
         nest.CopyModel('static_synapse', 'inh_strong', {'weight': self.parameters['Weight Stimulus']})
         self.l = tp.CreateLayer({'rows': self.parameters['Rows'],
                                  'columns': self.parameters['Columns'],
