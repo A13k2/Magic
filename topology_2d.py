@@ -9,21 +9,23 @@ matplotlib.use('Agg')
 
 base_folder = 'figures/'
 date_folder = 'tsodyks_analysis/'
-sub_folder = '18-10-30/'
+sub_folder = '18-10-31/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
 
 parameters = {'Name': 'inhibition',
-              'Columns': 80,
-              'Rows': 80,
+              'Columns': 40,
+              'Rows': 40,
               'Excitational Weight': 4.0,
               'Radius excitational': 0.5,
-              'Sigma excitational': 0.05,
+              'Sigma excitational': 0.15,
               'Inhibitory Weight': -16.0,
               'Radius inhibitory': 0.5,
-              'Sigma inhibitory': 0.1,
-              'Excitatory Weight Maximum': 0.8,
-              'Inhibitory Weight Maximum': 0.5,
+              'Sigma inhibitory': 0.3,
+              'Jee Maximum': 0.6,
+              'Jii Maximum': 0.5,
+              'Jei Maximum': 0.8,
+              'Jie Maximum': 0.5,
               'Number excitational cells': 8,
               'Number inhibitory cells': 2,
               'Weight Stimulus': 0.,
@@ -36,7 +38,7 @@ parameters = {'Name': 'inhibition',
               'i2i delay': 2.0,
               'delay growth multiplier': 3,
               'Stimulus rate': 40000.,
-              'Background rate excitatory': 15000.,
+              'Background rate excitatory': 25000.,
               'Background rate inhibitory': 15000.,
               'Time before stimulation': 1000.,
               'Time of stimulation': 0.,
@@ -47,7 +49,8 @@ parameters = {'Name': 'inhibition',
 Starter
 """
 def tsodyksAnalysis():
-    curr_folder = all_folder + "test1"
+    curr_folder = all_folder + "test6"
+    magic.makeDir(curr_folder)
     magic.tsodyks_analysis(parameters, curr_folder)
 
 def test():
