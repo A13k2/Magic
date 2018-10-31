@@ -9,13 +9,226 @@ import nest.raster_plot
 import pandas as pd
 import topology_2d_helper as magic
 
+
+"""
+------------------------------------------
+Simulation Control, what to start when....
+------------------------------------------
+"""
+def simulationAndAnalysis(parameters, curr_folder='.'):
+    delay_visualisation_linear(parameters, curr_folder+'/delay.png')
+    weightVisualisation(parameters, curr_folder+'/weights.pdf')
+    simulation = magic.RandomBalancedNetwork(parameters)
+    simulation.start_simulation()
+    simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+    makeDir(curr_folder+'/excitatory_neurons')
+    makeDir(curr_folder+'/inhibitory_neurons')
+    stimulationControlLazy(simulation, curr_folder)
+    clusteringPlotLazy(simulation, parameters, curr_folder)
+    fanoFactorTimeLazy(simulation, curr_folder)
+    recordElectrodeEnviromentLazy(simulation, curr_folder)
+    spikeCountHistogramLazy(simulation, curr_folder)
+    rasterPlotLazy(simulation, curr_folder)
+    # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
+
+
+def tsodyks_analysis(parameters, curr_folder='.'):
+    def e_i_of_i_ext():
+        i_start = 10000.
+        i_max = 30000.
+        i_step = 2500.
+        i_ext = np.arange(i_start, i_max, i_step)
+        i_average = []
+        e_average = []
+        grid_points = parameters['Rows']*parameters['Columns']
+        num_i_neurons = parameters['Number inhibitory cells']*grid_points
+        num_e_neurons = parameters['Number excitational cells']*grid_points
+        t_min = parameters['Time before stimulation']+parameters['Time of stimulation']
+        t_max = t_min+parameters['Time after Stimulation']
+        for inh_background in i_ext:
+            print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            print('Running "Tsodyks analysis" with currently i_{ext} = '
+                  + str(inh_background) + ' of i_{ext, max} = ' + str(i_max-i_step))
+            print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            parameters['Background rate inhibitory'] = inh_background
+            simulation = magic.RandomBalancedNetwork(parameters)
+            simulation.start_simulation()
+            i_average.append(average_firing_rate(simulation.df_in, num_i_neurons, t_min, t_max))
+            e_average.append(average_firing_rate(simulation.df_ex, num_e_neurons, t_min, t_max))
+        return i_average, e_average, i_ext
+    delay_visualisation_linear(parameters, curr_folder+'/delay.png')
+    weightVisualisation(parameters, curr_folder+'/weights.pdf')
+    i_average, e_average, i_ext = e_i_of_i_ext()
+    plt.clf()
+    plt.plot(i_ext, i_average, label=r'$\hat{I}$')
+    plt.plot(i_ext, e_average, label=r'$\hat{E}$')
+    plt.xlabel(r'$i_{ext}$')
+    plt.ylabel(r'$\hat{\nu}$')
+    plt.legend()
+    plt.savefig(curr_folder+'/IE_vs_i_ext.png')
+
+
+
+"""
+--------------
+General helper
+--------------
+"""
+def average_firing_rate(df, num_neurons, t_min, t_max):
+    df = df[df['Time'] >= t_min]
+    df = df[df['Time'] <= t_max]
+    return len(df)/float(num_neurons*((t_max-t_min)/1000.))
+
+
+def makeDir(folder):
+    if not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+
+
+def makePandas(senderEvents, ctr):
+    """
+    Return a pandas DataFrame (Sender, Time, Position, Distance from ctr) for the recordings of a spike detector
+    :param senderEvents: Recordings from spike detector
+    :param ctr: Center Element(GID)
+    :return: Pandas dataframe with Sender, Time, Position and Distance
+    """
+    senders = [int(i) for i in senderEvents['senders']]  #int necessary, because GID's for tp.GetPosition. Otherwise error
+    times = [i for i in senderEvents['times']]
+    positions = [i for i in tp.GetPosition(senders)]
+    if len(senders) >= 2:
+        distances = [i for i in tp.Distance(senders, [ctr])]
+        return pd.DataFrame({'Sender': senders,
+                             'Time': times, 'Distance from Center': distances,
+                             'Position': positions
+                             })
+    else:
+        return pd.DataFrame({'Sender': senders,
+                             'Time': times,
+                             'Position': positions
+                             })
+
+
+def convertTopologyToRealID(pandasFrame, gridSize=400):
+    for index, row in pandasFrame.iterrows():
+        row['Sender'] = row['Sender'] % gridSize
+    return pandasFrame
+
+
+def interspikeIntervals(spikeTrain):
+    """
+    Returns Interspike Intervals (Time difference between Spikes)
+    :param spikeTrain:
+    :return:
+    """
+    return np.diff(spikeTrain)
+
+
+def fanoFactor(df, bins=10, gridSize=400, tMin=0., tMax=250., tStep=25.):
+    """
+    Creates Fano Factor Plots (for different times)
+    :param df: Pandas dataframe with Sender and Time
+    :param bins: Binning in time
+    :param gridSize: Number of grid points in the network
+    :param tMin: time to start from
+    :param tMax: time to end at
+    :param tStep: Step
+    :return: ls: Fano Factor
+    :return: ls: Time for Fano Factor
+    """
+    df['Sender'] = df['Sender'] % gridSize
+    ls = []
+    tReturn = []
+    t_old = 0
+    for t in np.arange(tMin, tMax, tStep):
+        s = []
+        for i in range(2, gridSize+2):
+            oneSender = df[df['Sender'] == i]['Time']
+            oneSender = oneSender[oneSender >= t_old]
+            oneSender = oneSender[oneSender < t]
+            interSpike = np.diff(oneSender)
+            if (len(interSpike) > 1):
+                fano = np.var(interSpike)/np.mean(interSpike)
+                s.append(fano)
+        if (s != []):
+            s = np.asarray(s)
+            ls.append(np.mean(s)/100.)
+            tReturn.append(t)
+        t_old = t
+    return ls, tReturn
+
+
+def spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
+    """
+    Returns Histogram splitted for different Times
+    :param df:
+    :param t_start:
+    :param t_stop:
+    :param t_step:
+    :param number_of_neurons:
+    :param grid_size:
+    :return:
+    """
+    y, x = np.histogram(df['Time']/1000., np.arange(t_start, t_stop, t_step))
+    y = y/((t_stop-t_start)*grid_size*number_of_neurons)
+    return x, y
+
+
+def fanoFactorNew(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
+    """
+    Return Fano Factor for pandas dataframe and for different times
+    :param df:
+    :param t_start:
+    :param t_stop:
+    :param t_step:
+    :param number_of_neurons:
+    :param grid_size:
+    :return:
+    """
+    x, y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
+    return np.var(y)/np.mean(y)
+
+
+def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
+    """
+    Fano Factor at different Time
+    :param df:
+    :param t_start:
+    :param t_stop:
+    :param t_step:
+    :param number_of_neurons:
+    :param grid_size:
+    :param bins:
+    :return:
+    """
+    df_time_cut = df.groupby(pd.cut(df['Time'], bins))
+    ts = []
+    fano = []
+    for t, df_curr in df_time_cut:
+#        import pdb; pdb.set_trace()
+        fano_curr = fanoFactorNew(df_curr, t.left/1000., t.right/1000., t_step, number_of_neurons, grid_size)
+        fano.append(fano_curr)
+        ts.append(t.left)
+    return ts, fano
+
+
+"""
+-----------
+Math helper
+-----------
+"""
 def linear(x,a,b):
     return a+x*b
+
 
 def gaussian(x, mu, sig, maximum=1.):
     return maximum*np.exp(-np.power(x - mu, 2.) / (2. * np.power(sig, 2.)))
 
 
+"""
+-----------
+Plot Helper
+-----------
+"""
 def distancePlotsLazy(Start, End, Step, network, folder):
     for events, title, neurons_folder in zip([network.events_ex, network.events_in], ["Excitatory", "Inhibitory"], ['/excitatory_neurons', '/inhibitory_neurons']):
         for start, end in zip(np.arange(Start, End, Step), np.arange(Start + Step, End + Step, Step)):
@@ -128,28 +341,39 @@ def rasterPlotLazy(network, folder):
     plt.savefig(folder + '/inhibitory_neurons/raster.png', dpi=300)
 
 
-def makeDir(folder):
-    if not os.path.exists(folder):
-        os.makedirs(folder, exist_ok=True)
+def clusteringPlotLazy(network, parameters, folder):
+    """
+    Plots clustering
+    """
+    def worker1(percentage, folder):
+        increased, average, decreased = clusteringPlot(network.df_ex, parameters['Time before stimulation'], 1000., 1500., percChange=percentage)
+        exc_folder_during = folder+'/excitatory_neurons/barplots/during/'
+        makeDir(exc_folder_during)
+        exc_folder_after = folder+'/excitatory_neurons/barplots/after/'
+        makeDir(exc_folder_after)
+        combinedBarPlot(average, increased, decreased, exc_folder_during+str(percentage)+'.png')
+        increased, average, decreased = clusteringPlot(network.df_in, parameters['Time before stimulation'], 1000., 1500., percChange=percentage)
+        inh_folder_during = folder+'/inhibitory_neurons/barPlots/during/'
+        makeDir(inh_folder_during)
+        inh_folder_after = folder+'/inhibitory_neurons/barPlots/after/'
+        makeDir(inh_folder_after)
+        combinedBarPlot(average, increased, decreased, inh_folder_during+str(percentage)+'.png')
+        increased, average, decreased = clusteringPlot(network.df_ex, parameters['Time before stimulation'], 1500., 1700., percChange=percentage)
+        combinedBarPlot(average, increased, decreased, exc_folder_after+str(percentage)+'.png')
+        increased, average, decreased = clusteringPlot(network.df_in, parameters['Time before stimulation'], 1500., 1700., percChange=percentage)
+        combinedBarPlot(average, increased, decreased, inh_folder_after+str(percentage)+'.png')
+        return
+    for percentage in [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5]:
+        # t = threading.Thread(target=worker1, args=(percentage, file))
+        # t.start()
+        worker1(percentage, folder)
 
 
-def simulationAndAnalysis(parameters, curr_folder='.'):
-                delay_visualisation_linear(parameters, curr_folder+'/delay.png')
-                weightVisualisation(parameters, curr_folder+'/weights.pdf')
-                simulation = magic.RandomBalancedNetwork(parameters)
-                simulation.start_simulation()
-                simulation.writeParametersToFile(curr_folder + '/parameters.txt')
-                makeDir(curr_folder+'/excitatory_neurons')
-                makeDir(curr_folder+'/inhibitory_neurons')
-                stimulationControlLazy(simulation, curr_folder)
-                clusteringPlotLazy(simulation, parameters, curr_folder)
-                fanoFactorTimeLazy(simulation, curr_folder)
-                recordElectrodeEnviromentLazy(simulation, curr_folder)
-                spikeCountHistogramLazy(simulation, curr_folder)
-                rasterPlotLazy(simulation, curr_folder)
-                # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
-
-
+"""
+--------------
+Visualisations
+--------------
+"""
 def weightVisualisation(parameters, file):
     plt.clf()
     x = np.arange(-0.5,0.51,0.01)
@@ -185,35 +409,6 @@ def delay_visualisation_linear(parameters, file):
     plt.savefig(file)
 
 
-
-def clusteringPlotLazy(network, parameters, folder):
-    """
-    Plots clustering
-    """
-    def worker1(percentage, folder):
-        increased, average, decreased = clusteringPlot(network.df_ex, parameters['Time before stimulation'], 1000., 1500., percChange=percentage)
-        exc_folder_during = folder+'/excitatory_neurons/barplots/during/'
-        makeDir(exc_folder_during)
-        exc_folder_after = folder+'/excitatory_neurons/barplots/after/'
-        makeDir(exc_folder_after)
-        combinedBarPlot(average, increased, decreased, exc_folder_during+str(percentage)+'.png')
-        increased, average, decreased = clusteringPlot(network.df_in, parameters['Time before stimulation'], 1000., 1500., percChange=percentage)
-        inh_folder_during = folder+'/inhibitory_neurons/barPlots/during/'
-        makeDir(inh_folder_during)
-        inh_folder_after = folder+'/inhibitory_neurons/barPlots/after/'
-        makeDir(inh_folder_after)
-        combinedBarPlot(average, increased, decreased, inh_folder_during+str(percentage)+'.png')
-        increased, average, decreased = clusteringPlot(network.df_ex, parameters['Time before stimulation'], 1500., 1700., percChange=percentage)
-        combinedBarPlot(average, increased, decreased, exc_folder_after+str(percentage)+'.png')
-        increased, average, decreased = clusteringPlot(network.df_in, parameters['Time before stimulation'], 1500., 1700., percChange=percentage)
-        combinedBarPlot(average, increased, decreased, inh_folder_after+str(percentage)+'.png')
-        return
-    for percentage in [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5]:
-        # t = threading.Thread(target=worker1, args=(percentage, file))
-        # t.start()
-        worker1(percentage, folder)
-
-
 def combinedBarPlot(average, increased, decreased, file):
     plt.clf()
     x = np.arange(3)
@@ -230,7 +425,6 @@ def combinedBarPlot(average, increased, decreased, file):
     plt.ylabel('% of all')
     plt.legend((p0[0], p1[0], p2[0]), ('Average', 'Increased', 'Decreased'))
     plt.savefig(file)
-
 
 
 def barplotCluster(average, increased, decreased, file="", save=False):
@@ -301,8 +495,6 @@ def clusteringPlot(df, warmUpTime, startRecord, stopRecord, percChange=0.05, sta
     return inc_array, avr_array, dec_array
 
 
-
-
 def distanceFiringRate(eventSenders, ctr, min=0, max=0.5, bins=5, neurons_per_gridpoint=8, title='Firing Rate vs. Distance', gridSize=400):
     """
     Plots firing Rates of Time for different Distances
@@ -333,86 +525,6 @@ def distanceFiringRate(eventSenders, ctr, min=0, max=0.5, bins=5, neurons_per_gr
     grouped.plot(title=title)
 
 
-def makePandas(senderEvents, ctr):
-    """
-    Return a pandas DataFrame (Sender, Time, Position, Distance from ctr) for the recordings of a spike detector
-    :param senderEvents: Recordings from spike detector
-    :param ctr: Center Element(GID)
-    :return: Pandas dataframe with Sender, Time, Position and Distance
-    """
-    senders = [int(i) for i in senderEvents['senders']]  #int necessary, because GID's for tp.GetPosition. Otherwise error
-    times = [i for i in senderEvents['times']]
-    distances = [i for i in tp.Distance(senders, [ctr])]
-    positions = [i for i in tp.GetPosition(senders)]
-    return pd.DataFrame({'Sender': senders,
-                         'Time': times, 'Distance from Center': distances,
-                         'Position': positions
-                         })
-
-
-def convertTopologyToRealID(pandasFrame, gridSize=400):
-    for index, row in pandasFrame.iterrows():
-        row['Sender'] = row['Sender'] % gridSize
-    return pandasFrame
-
-
-def interspikeIntervals(spikeTrain):
-    """
-    Returns Interspike Intervals (Time difference between Spikes)
-    :param spikeTrain:
-    :return:
-    """
-    return np.diff(spikeTrain)
-
-
-def fanoFactor(df, bins=10, gridSize=400, tMin=0., tMax=250., tStep=25.):
-    """
-    Creates Fano Factor Plots (for different times)
-    :param df: Pandas dataframe with Sender and Time
-    :param bins: Binning in time
-    :param gridSize: Number of grid points in the network
-    :param tMin: time to start from
-    :param tMax: time to end at
-    :param tStep: Step
-    :return: ls: Fano Factor
-    :return: ls: Time for Fano Factor
-    """
-    df['Sender'] = df['Sender'] % gridSize
-    ls = []
-    tReturn = []
-    t_old = 0
-    for t in np.arange(tMin, tMax, tStep):
-        s = []
-        for i in range(2, gridSize+2):
-            oneSender = df[df['Sender'] == i]['Time']
-            oneSender = oneSender[oneSender >= t_old]
-            oneSender = oneSender[oneSender < t]
-            interSpike = np.diff(oneSender)
-            if (len(interSpike) > 1):
-                fano = np.var(interSpike)/np.mean(interSpike)
-                s.append(fano)
-        if (s != []):
-            s = np.asarray(s)
-            ls.append(np.mean(s)/100.)
-            tReturn.append(t)
-        t_old = t
-    return ls, tReturn
-
-
-def spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
-    """
-    Returns Histogram splitted for different Times
-    :param df:
-    :param t_start:
-    :param t_stop:
-    :param t_step:
-    :param number_of_neurons:
-    :param grid_size:
-    :return:
-    """
-    y, x = np.histogram(df['Time']/1000., np.arange(t_start, t_stop, t_step))
-    y = y/((t_stop-t_start)*grid_size*number_of_neurons)
-    return x, y
 
 
 def spike_count_histogram_plot(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
@@ -429,43 +541,6 @@ def spike_count_histogram_plot(df, t_start, t_stop, t_step, number_of_neurons, g
     x,y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
     return plt.bar(x[:-1], y, width=0.9*t_step)
 
-
-def fanoFactorNew(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
-    """
-    Return Fano Factor for pandas dataframe and for different times
-    :param df:
-    :param t_start:
-    :param t_stop:
-    :param t_step:
-    :param number_of_neurons:
-    :param grid_size:
-    :return:
-    """
-    x, y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
-    return np.var(y)/np.mean(y)
-
-
-def fanoFactorTime(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
-    """
-    Fano Factor at different Time
-    :param df:
-    :param t_start:
-    :param t_stop:
-    :param t_step:
-    :param number_of_neurons:
-    :param grid_size:
-    :param bins:
-    :return:
-    """
-    df_time_cut = df.groupby(pd.cut(df['Time'], bins))
-    ts = []
-    fano = []
-    for t, df_curr in df_time_cut:
-#        import pdb; pdb.set_trace()
-        fano_curr = fanoFactorNew(df_curr, t.left/1000., t.right/1000., t_step, number_of_neurons, grid_size)
-        fano.append(fano_curr)
-        ts.append(t.left)
-    return ts, fano
 
 
 def fanoFactorTimePlot(df, t_start, t_stop, t_step, number_of_neurons, grid_size, bins=10):
@@ -652,16 +727,30 @@ class RandomBalancedNetwork:
         tp.ConnectLayers(self.l, self.l, cdict_e2e)
         tp.ConnectLayers(self.l, self.l, cdict_i2i)
         tp.ConnectLayers(self.l, self.l, cdict_i2e)
-        stim = tp.CreateLayer({'rows': 1,
-                               'columns': 1,
-                               'elements': 'poisson_generator'})
-        stim_i = nest.GetLeaves(stim, local_only=True)[0]
-        nest.SetStatus(stim_i, {'rate': parameters['Background rate']})
-        background_stim_dict = {'connection_type': 'divergent',
-                                # 'mask': {'grid': {'rows': self.parameters['Rows'],
-                                                  # 'columns': self.parameters['Columns']}},
-                                'synapse_model': 'exc'}
-        tp.ConnectLayers(stim, self.l, background_stim_dict)
+        """
+        Creating Background
+        """
+        #Excitatory Background
+        background_e = tp.CreateLayer({'rows': 1,
+                                       'columns': 1,
+                                       'elements': 'poisson_generator'})
+        background_e_leaves = nest.GetLeaves(background_e, local_only=True)[0]
+        nest.SetStatus(background_e_leaves, {'rate': parameters['Background rate excitatory']})
+        background_e_dict = {'connection_type': 'divergent',
+                             'targets': {'model': 'exci'},
+                             'synapse_model': 'exc'}
+        tp.ConnectLayers(background_e, self.l, background_e_dict)
+        # Inhibitory Background
+        background_i = tp.CreateLayer({'rows': 1,
+                                       'columns': 1,
+                                       'elements': 'poisson_generator'})
+        background_i_leaves = nest.GetLeaves(background_i, local_only=True)[0]
+        nest.SetStatus(background_i_leaves, {'rate': parameters['Background rate inhibitory']})
+        background_i_dict = {'connection_type': 'divergent',
+                             'targets': {'model': 'inhi'},
+                             'synapse_model': 'exc'}
+        tp.ConnectLayers(background_i, self.l, background_i_dict)
+        # Excitation/ Inhibition in center
         stim2 = tp.CreateLayer({'rows': 1,
                                 'columns': 1,
                                 'elements': 'poisson_generator'})

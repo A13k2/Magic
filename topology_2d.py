@@ -7,9 +7,9 @@ import matplotlib
 matplotlib.use('Agg')
 
 
-base_folder = '/home/alex/Magic/figures/'
-date_folder = '18_10_30/'
-sub_folder = 'tests/'
+base_folder = 'figures/'
+date_folder = 'tsodyks_analysis/'
+sub_folder = '18-10-30/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
 
@@ -23,48 +23,45 @@ parameters = {'Name': 'inhibition',
               'Radius inhibitory': 0.5,
               'Sigma inhibitory': 0.1,
               'Excitatory Weight Maximum': 0.8,
-              'Inhibitory Weight Maximum': 0.2,
+              'Inhibitory Weight Maximum': 0.5,
               'Number excitational cells': 8,
               'Number inhibitory cells': 2,
-              'Weight Stimulus': -3000.,
+              'Weight Stimulus': 0.,
+              # 'Weight Stimulus': -3000.,
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
               'e2e delay': 3.0,
               'e2i delay': 3.0,
-              'i2e delay': 3.0,
-<<<<<<< HEAD
-              'i2i delay': 2.0,
-              'delay growth multiplier': 3.,
-||||||| merged common ancestors
+              'i2e delay': 2.0,
               'i2i delay': 2.0,
               'delay growth multiplier': 3,
-=======
-              'i2i delay': 3.0,
-              'delay growth multiplier': 3,
->>>>>>> refs/remotes/origin/master
               'Stimulus rate': 40000.,
-              'Background rate': 20000.,
+              'Background rate excitatory': 15000.,
+              'Background rate inhibitory': 15000.,
               'Time before stimulation': 1000.,
-              'Time of stimulation': 500.,
+              'Time of stimulation': 0.,
               'Time after Stimulation': 1000.,
               }
 
+"""
+Starter
+"""
+def tsodyksAnalysis():
+    curr_folder = all_folder + "test1"
+    magic.tsodyks_analysis(parameters, curr_folder)
+
 def test():
-<<<<<<< HEAD
-    curr_folder = all_folder + "uniform_weights4"
-||||||| merged common ancestors
-    curr_folder = all_folder + "uniform_weights2"
-=======
-    curr_folder = all_folder + "test2"
->>>>>>> refs/remotes/origin/master
+    curr_folder = all_folder + "test1"
     if not os.path.exists(curr_folder):
         os.mkdir(curr_folder)
         os.mkdir(curr_folder+'/excitatory_neurons')
         os.mkdir(curr_folder+'/inhibitory_neurons')
     magic.simulationAndAnalysis(parameters, curr_folder)
 
-
-test()
+"""
+Run Program
+"""
+tsodyksAnalysis()
 
 def automation():
     radius_inhibs = [0.1, 0.2, 0.2, 0.2]
