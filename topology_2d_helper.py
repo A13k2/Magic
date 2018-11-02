@@ -55,6 +55,10 @@ def tsodyks_analysis(parameters, curr_folder='.'):
             simulation.start_simulation()
             i_average.append(average_firing_rate(simulation.df_in, num_i_neurons, t_min, t_max))
             e_average.append(average_firing_rate(simulation.df_ex, num_e_neurons, t_min, t_max))
+            print('Average firing rate for inhibitory population: '+
+                  str(i_average[-1]))
+            print('Average firing rate for excitatory population: '+
+                  str(e_average[-1]))
         return i_average, e_average, i_ext
     delay_visualisation_linear(parameters, curr_folder+'/delay.png')
     weightVisualisation(parameters, curr_folder+'/weights.pdf')
