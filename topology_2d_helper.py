@@ -58,12 +58,12 @@ def tsodyks_analysis(parameters, curr_folder='.'):
         return i_average, e_average, i_ext
     delay_visualisation_linear(parameters, curr_folder+'/delay.png')
     weightVisualisation(parameters, curr_folder+'/weights.pdf')
-    j_ee_min = 0.1
-    j_ee_num = 5
-    j_ee_max = 1.
+    j_ee_min = 4
+    j_ee_num = 6
+    j_ee_max = 10
     j_ee = np.linspace(j_ee_min, j_ee_max, j_ee_num)
     for j_ in j_ee:
-        parameters['Jee Maximum'] = j_
+        parameters['Jee'] = j_
         i_average, e_average, i_ext = e_i_of_i_ext()
         plt.clf()
         plt.plot(i_ext, i_average, label=r'$\hat{I}$')
@@ -383,9 +383,9 @@ Visualisations
 def weightVisualisation(parameters, file):
     plt.clf()
     x = np.arange(-0.5,0.51,0.01)
-    plt.plot(x, gaussian(x, 0., parameters['Sigma excitational'], maximum=parameters['Jee Maximum']), label='Excitational')
-    plt.plot(x, gaussian(x, 0., parameters['Sigma inhibitory'], maximum=parameters['Jii Maximum']), label='Inhibitory')
-    plt.plot(x, gaussian(x, 0., parameters['Sigma excitational'], maximum=parameters['Jee Maximum'])-gaussian(x, 0., parameters['Sigma inhibitory'], maximum=parameters['Jii Maximum']), label='Excitational - Inhibitory')
+    plt.plot(x, gaussian(x, 0., parameters['Sigma excitational'], maximum=parameters['Jee Connectivity']), label='Excitational')
+    plt.plot(x, gaussian(x, 0., parameters['Sigma inhibitory'], maximum=parameters['Jii Connectivity']), label='Inhibitory')
+    plt.plot(x, gaussian(x, 0., parameters['Sigma excitational'], maximum=parameters['Jee Connectivity'])-gaussian(x, 0., parameters['Sigma inhibitory'], maximum=parameters['Jii Connectivity']), label='Excitational - Inhibitory')
     plt.title('Weight Distribution')
     plt.legend()
     plt.xlabel('Distance from Neuron')
@@ -687,10 +687,10 @@ class RandomBalancedNetwork:
                              })
         nest.CopyModel('iaf_psc_alpha', 'exci')
         nest.CopyModel('iaf_psc_alpha', 'inhi')
-        nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Excitational Weight']})
-        nest.CopyModel('static_synapse', 'inh', {'weight': self.parameters['Inhibitory Weight']})
-        # nest.CopyModel('static_synapse', 'exc')
-        # nest.CopyModel('static_synapse', 'inh')
+        nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Jei']})
+        nest.CopyModel('static_synapse', 'inh', {'weight': self.parameters['Jie']})
+        nest.CopyModel('static_synapse', 'exc_recurrent', {'weight': self.parameters['Jee']})
+        nest.CopyModel('static_synapse', 'inh_recurrent', {'weight': self.parameters['Jii']})
         nest.CopyModel('static_synapse', 'inh_strong', {'weight': self.parameters['Weight Stimulus']})
         self.l = tp.CreateLayer({'rows': self.parameters['Rows'],
                                  'columns': self.parameters['Columns'],
@@ -699,36 +699,44 @@ class RandomBalancedNetwork:
                                  'edge_wrap': False})
         cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
-                     'kernel': {'gaussian': {'p_center': parameters['Jei Maximum'], 'sigma': self.parameters['Sigma excitational']}},
+                     'kernel': {'gaussian': {'p_center': parameters['Jei Connectivity'], 'sigma': self.parameters['Sigma excitational']}},
                      'delays': {'linear': {'c': parameters['e2i delay'], 'a': parameters['e2i delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'exci'},
                      'targets': {'model': 'inhi'},
-                     'synapse_model': 'exc',
-                     'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
+                     'synapse_model': 'exc'}
+                     #'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
+                     #'synapse_model': 'exc',
+                     #'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
         cdict_e2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
-                     'kernel': {'gaussian': {'p_center': parameters['Jee Maximum'], 'sigma': self.parameters['Sigma excitational']}},
+                     'kernel': {'gaussian': {'p_center': parameters['Jee Connectivity'], 'sigma': self.parameters['Sigma excitational']}},
                      'delays': {'linear': {'c': parameters['e2e delay'], 'a': parameters['e2e delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'exci'},
                      'targets': {'model': 'exci'},
-                     'synapse_model': 'exc',
-                     'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
+                     'synapse_model': 'exc_recurrent'}
+                     #'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
+                     #'synapse_model': 'exc_recurrent',
+                     #'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
         cdict_i2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
-                     'kernel': {'gaussian': {'p_center': parameters['Jie Maximum'], 'sigma': self.parameters['Sigma inhibitory']}},
+                     'kernel': {'gaussian': {'p_center': parameters['Jie Connectivity'], 'sigma': self.parameters['Sigma inhibitory']}},
                      'delays': {'linear': {'c': parameters['i2e delay'], 'a': parameters['i2e delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'inhi'},
                      'targets': {'model': 'exci'},
-                     'synapse_model': 'inh',
-                     'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
+                     'synapse_model': 'inh'}
+                     #'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
+                     #'synapse_model': 'inh',
+                     #'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
         cdict_i2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
-                     'kernel': {'gaussian': {'p_center': parameters['Jii Maximum'], 'sigma': self.parameters['Sigma inhibitory']}},
+                     'kernel': {'gaussian': {'p_center': parameters['Jii Connectivity'], 'sigma': self.parameters['Sigma inhibitory']}},
                      'delays': {'linear': {'c': parameters['i2i delay'], 'a': parameters['i2i delay']*parameters['delay growth multiplier']}},
                      'sources': {'model': 'inhi'},
                      'targets': {'model': 'inhi'},
-                     'synapse_model': 'inh',
-                     'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
+                     'synapse_model': 'inh_recurrent'}
+                     # 'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
+                     # 'synapse_model': 'inh_recurrent',
+                     # 'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
         tp.ConnectLayers(self.l, self.l, cdict_e2i)
         tp.ConnectLayers(self.l, self.l, cdict_e2e)
         tp.ConnectLayers(self.l, self.l, cdict_i2i)

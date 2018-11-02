@@ -9,34 +9,36 @@ matplotlib.use('Agg')
 
 base_folder = 'figures/'
 date_folder = 'tsodyks_analysis/'
-sub_folder = '18-10-31/'
+sub_folder = '18-11-01/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
 
 parameters = {'Name': 'inhibition',
               'Columns': 40,
               'Rows': 40,
-              'Excitational Weight': 4.0,
               'Radius excitational': 0.5,
-              'Sigma excitational': 0.15,
-              'Inhibitory Weight': -16.0,
+              'Sigma excitational': 0.5,
               'Radius inhibitory': 0.5,
-              'Sigma inhibitory': 0.3,
-              'Jee Maximum': 0.6,
-              'Jii Maximum': 0.5,
-              'Jei Maximum': 0.8,
-              'Jie Maximum': 0.5,
+              'Sigma inhibitory': 0.5,
+              'Jee': 4.,
+              'Jii': 16.,
+              'Jei': 4.,
+              'Jie': -16.,
+              'Jee Connectivity': 0.8,
+              'Jii Connectivity': 0.5,
+              'Jei Connectivity': 0.8,
+              'Jie Connectivity': 0.5,
               'Number excitational cells': 8,
               'Number inhibitory cells': 2,
               'Weight Stimulus': 0.,
               # 'Weight Stimulus': -3000.,
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
-              'e2e delay': 3.0,
-              'e2i delay': 3.0,
-              'i2e delay': 2.0,
-              'i2i delay': 2.0,
-              'delay growth multiplier': 3,
+              'e2e delay': 1.0,
+              'e2i delay': 1.0,
+              'i2e delay': 1.0,
+              'i2i delay': 1.0,
+              'delay growth multiplier': 0,
               'Stimulus rate': 40000.,
               'Background rate excitatory': 25000.,
               'Background rate inhibitory': 15000.,
@@ -49,12 +51,12 @@ parameters = {'Name': 'inhibition',
 Starter
 """
 def tsodyksAnalysis():
-    curr_folder = all_folder + "test6"
+    curr_folder = all_folder + "test4"
     magic.makeDir(curr_folder)
     magic.tsodyks_analysis(parameters, curr_folder)
 
 def test():
-    curr_folder = all_folder + "test1"
+    curr_folder = all_folder + "test2"
     if not os.path.exists(curr_folder):
         os.mkdir(curr_folder)
         os.mkdir(curr_folder+'/excitatory_neurons')
