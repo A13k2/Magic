@@ -60,7 +60,7 @@ def tsodyks_analysis(parameters, curr_folder='.'):
     weightVisualisation(parameters, curr_folder+'/weights.pdf')
     j_ee_min = 4
     j_ee_num = 6
-    j_ee_max = 10
+    j_ee_max = 16
     j_ee = np.linspace(j_ee_min, j_ee_max, j_ee_num)
     for j_ in j_ee:
         parameters['Jee'] = j_
