@@ -9,39 +9,38 @@ matplotlib.use('Agg')
 
 base_folder = 'figures/'
 date_folder = 'tsodyks_analysis/'
-sub_folder = '18-11-02/'
+sub_folder = '18-11-07/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
 
-parameters = {'Name': 'inhibition',
+parameters = {'Name': 'tsodyks',
               'Columns': 40,
               'Rows': 40,
-              'Radius excitational': 0.5,
-              'Sigma excitational': 0.5,
-              'Radius inhibitory': 0.5,
-              'Sigma inhibitory': 0.5,
+              'Radius excitational': 1.,
+              'Sigma excitational': 1.,
+              'Radius inhibitory': 1.,
+              'Sigma inhibitory': 1.,
               'Jee': 4.,
-              'Jii': 6.,
+              'Jii': 4.,
               'Jei': 4.,
-              'Jie': -16.,
-              'Jee Connectivity': 0.8,
-              'Jii Connectivity': 0.5,
-              'Jei Connectivity': 0.8,
-              'Jie Connectivity': 0.5,
-              'Number excitational cells': 8,
-              'Number inhibitory cells': 2,
-              'Weight Stimulus': 0.,
-              # 'Weight Stimulus': -3000.,
+              'Jie': -4.,
+              'Jee Connectivity': 0.1,
+              'Jii Connectivity': 0.1,
+              'Jei Connectivity': 0.1,
+              'Jie Connectivity': 0.1,
+              'Number excitational cells': 5,
+              'Number inhibitory cells': 5,
+              'Weight Stimulus': 0., # old: -3000.
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
               'e2e delay': 2.0,
-              'e2i delay': 3.0,
-              'i2e delay': 3.0,
+              'e2i delay': 2.0,
+              'i2e delay': 2.0,
               'i2i delay': 2.0,
               'delay growth multiplier': 1,
               'Stimulus rate': 40000.,
-              'Background rate excitatory': 15000.,
-              'Background rate inhibitory': 15000.,
+              'Background rate excitatory': 25000.,
+              'Background rate inhibitory': 10000.,
               'Time before stimulation': 1000.,
               'Time of stimulation': 0.,
               'Time after Stimulation': 1000.,
@@ -51,12 +50,14 @@ parameters = {'Name': 'inhibition',
 Starter
 """
 def tsodyksAnalysis():
-    curr_folder = all_folder + "test2"
+    curr_folder = all_folder + "test1"
+    if not os.path.exists(curr_folder):
+        os.makedirs(curr_folder)
     magic.makeDir(curr_folder)
     magic.tsodyks_analysis(parameters, curr_folder)
 
 def test():
-    curr_folder = all_folder + "test2"
+    curr_folder = base_folder + sub_folder + "test1"
     if not os.path.exists(curr_folder):
         os.mkdir(curr_folder)
         os.mkdir(curr_folder+'/excitatory_neurons')
@@ -67,6 +68,7 @@ def test():
 Run Program
 """
 tsodyksAnalysis()
+# test()
 
 def automation():
     radius_inhibs = [0.1, 0.2, 0.2, 0.2]

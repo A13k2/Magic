@@ -24,9 +24,10 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
     makeDir(curr_folder+'/excitatory_neurons')
     makeDir(curr_folder+'/inhibitory_neurons')
     stimulationControlLazy(simulation, curr_folder)
-    clusteringPlotLazy(simulation, parameters, curr_folder)
-    fanoFactorTimeLazy(simulation, curr_folder)
-    recordElectrodeEnviromentLazy(simulation, curr_folder)
+    #clusteringPlotLazy(simulation, parameters, curr_folder)
+    #fanoFactorTimeLazy(simulation, curr_folder)
+    #recordElectrodeEnviromentLazy(simulation, curr_folder)
+    recordElectrodeLazy(simulation, curr_folder)
     spikeCountHistogramLazy(simulation, curr_folder)
     rasterPlotLazy(simulation, curr_folder)
     # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
@@ -34,8 +35,8 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
 
 def tsodyks_analysis(parameters, curr_folder='.'):
     def e_i_of_i_ext():
-        i_start = 10000.
-        i_max = 40000.
+        i_start = 0.
+        i_max = 30000.
         i_steps = 10
         i_ext = np.linspace(i_start, i_max, i_steps)
         i_average = []
@@ -53,6 +54,7 @@ def tsodyks_analysis(parameters, curr_folder='.'):
             parameters['Background rate inhibitory'] = inh_background
             simulation = magic.RandomBalancedNetwork(parameters)
             simulation.start_simulation()
+            simulation.writeParametersToFile(curr_folder+'/parameters.txt')
             i_average.append(average_firing_rate(simulation.df_in, num_i_neurons, t_min, t_max))
             e_average.append(average_firing_rate(simulation.df_ex, num_e_neurons, t_min, t_max))
             print('Average firing rate for inhibitory population: '+
@@ -62,9 +64,9 @@ def tsodyks_analysis(parameters, curr_folder='.'):
         return i_average, e_average, i_ext
     delay_visualisation_linear(parameters, curr_folder+'/delay.png')
     weightVisualisation(parameters, curr_folder+'/weights.pdf')
-    j_ee_min = 4
-    j_ee_num = 6
-    j_ee_max = 16
+    j_ee_min = 10
+    j_ee_num = 2
+    j_ee_max = 11
     j_ee = np.linspace(j_ee_min, j_ee_max, j_ee_num)
     for j_ in j_ee:
         parameters['Jee'] = j_
@@ -649,7 +651,7 @@ def distance(eventSenders, distanceMin, distanceMax, distanceFrom):
     return event, ts
 
 
-def recordElectrode(*df, posX, posY, numberOfNeurons=1):
+def recordElectrode(df, posX, posY, numberOfNeurons=1):
     """
     Shows firing Rate for Neuron at given Position
     :return: Plot
