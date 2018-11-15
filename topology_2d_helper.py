@@ -36,8 +36,8 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
 def tsodyks_analysis(parameters, curr_folder='.'):
     def e_i_of_i_ext():
         i_start = 0.
-        i_max = 30000.
-        i_steps = 10
+        i_max = 100000.
+        i_steps = 15
         i_ext = np.linspace(i_start, i_max, i_steps)
         i_average = []
         e_average = []
@@ -64,11 +64,12 @@ def tsodyks_analysis(parameters, curr_folder='.'):
         return i_average, e_average, i_ext
     delay_visualisation_linear(parameters, curr_folder+'/delay.png')
     weightVisualisation(parameters, curr_folder+'/weights.pdf')
-    j_ee_min = 10
-    j_ee_num = 2
-    j_ee_max = 11
+    j_ee_min = 1
+    j_ee_num = 10
+    j_ee_max = 10
     j_ee = np.linspace(j_ee_min, j_ee_max, j_ee_num)
     for j_ in j_ee:
+        # parameters['Jei'] = j_
         parameters['Jee'] = j_
         i_average, e_average, i_ext = e_i_of_i_ext()
         plt.clf()
@@ -684,6 +685,19 @@ def recordElectrodeEnviroment(df, posX, posY, dX, dY):
 
 class RandomBalancedNetwork:
     def __init__(self, parameters):
+        tauSyn = 0.5  # synaptic time constant in ms
+        tauMem = 20.0 # time constant of membrane potential in ms
+        CMem = 250.0  # capacitance of membrane in in pF
+        theta = 20.0  # membrane threshold potential in mV
+        neuron_params = {"C_m": CMem,
+                 "tau_m": tauMem,
+                 "tau_syn_ex": tauSyn,
+                 "tau_syn_in": tauSyn,
+                 "t_ref": 2.0,
+                 "E_L": 0.0,
+                 "V_reset": 0.0,
+                 "V_m": 0.0,
+                 "V_th": theta}
         self.parameters = parameters
         self.gridSize = parameters['Columns']*parameters['Rows']
         nest.ResetKernel()
@@ -692,7 +706,9 @@ class RandomBalancedNetwork:
                               "local_num_threads": 6
                              })
         nest.CopyModel('iaf_psc_alpha', 'exci')
+        nest.SetDefaults('exci', neuron_params)
         nest.CopyModel('iaf_psc_alpha', 'inhi')
+        nest.SetDefaults('inhi', neuron_params)
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Jei']})
         nest.CopyModel('static_synapse', 'inh', {'weight': self.parameters['Jie']})
         nest.CopyModel('static_synapse', 'exc_recurrent', {'weight': self.parameters['Jee']})
