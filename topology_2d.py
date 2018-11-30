@@ -9,7 +9,7 @@ matplotlib.use('Agg')
 
 base_folder = 'figures/'
 date_folder = 'tsodyks_analysis/'
-sub_folder = '18-11-15/'
+sub_folder = '18-11-30/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
 
@@ -20,10 +20,10 @@ parameters = {'Name': 'tsodyks',
               'Sigma excitational': 0.1,
               'Radius inhibitory': 0.2,
               'Sigma inhibitory': 0.1,
-              'Jee': 4.,
-              'Jii': 4.,
-              'Jei': 4.,
-              'Jie': -4.,
+              'Jee': 3.,
+              'Jii': 3.,
+              'Jei': 3.,
+              'Jie': -3.,
               'Jee Connectivity': 0.4,
               'Jii Connectivity': 0.4,
               'Jei Connectivity': 0.4,
@@ -33,16 +33,16 @@ parameters = {'Name': 'tsodyks',
               'Weight Stimulus': 0., # old: -3000.
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
-              'e2e delay': 2.0,
-              'e2i delay': 2.0,
-              'i2e delay': 2.0,
-              'i2i delay': 2.0,
-              'delay growth multiplier': 1,
+              'e2e delay': 1.0,
+              'e2i delay': 1.0,
+              'i2e delay': 1.0,
+              'i2i delay': 1.0,
+              'delay growth multiplier': 2,
               'Stimulus rate': 40000.,
-              'Background rate excitatory': 55000.,
-              'Background rate inhibitory': 55000.,
+              'Background rate excitatory': 15000.,
+              'Background rate inhibitory': 10000.,
               'Time before stimulation': 1000.,
-              'Time of stimulation': 500.,
+              'Time of stimulation': 0.,
               'Time after Stimulation': 1000.,
               }
 
@@ -50,7 +50,7 @@ parameters = {'Name': 'tsodyks',
 Starter
 """
 def tsodyksAnalysis():
-    curr_folder = all_folder + "40x40/test1"
+    curr_folder = all_folder + "40x40/test_higher_synpatic_delay"
     magic.makeDir(curr_folder)
     magic.tsodyks_analysis(parameters, curr_folder)
 
