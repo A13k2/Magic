@@ -34,6 +34,11 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
 
 
 def tsodyks_analysis(parameters, curr_folder='.'):
+    """
+    Plot average firing rate of populations E and I for different noise rate of
+    I
+    Saves different Plots for different J_ee
+    """
     def e_i_of_i_ext():
         i_start = 0.
         i_max = 30000.
@@ -81,6 +86,62 @@ def tsodyks_analysis(parameters, curr_folder='.'):
         plt.savefig(curr_folder+'/IE_vs_i_ext_j_ee_'+str(round(j_,1))+'.png')
 
 
+def tsodyks_analysis_quiver(parameters, curr_folder='.'):
+    """
+    Plot quiver Plot for different noise of E and I
+    """
+    def e_i(e_ext, i_ext):
+        ...
+    grid_points = parameters['Rows']*parameters['Columns']
+    num_i_neurons = parameters['Number inhibitory cells']*grid_points
+    num_e_neurons = parameters['Number excitational cells']*grid_points
+    t_min = parameters['Time before stimulation']+parameters['Time of stimulation']
+    t_max = t_min+parameters['Time after Stimulation']
+    def quiver_e_i(e_arange, i_arange):
+        E, I = np.meshgrid(e_arange, i_arange)
+        for e,i in zip(E.ravel(), I.ravel()):
+
+
+    def e_i_of_i_ext():
+        i_start = 0.
+        i_max = 30000.
+        i_steps = 10
+        i_ext = np.linspace(i_start, i_max, i_steps)
+        i_average = []
+        e_average = []
+        for inh_background in i_ext:
+            print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            print('Running "Tsodyks analysis" with currently i_{ext} = '
+                  + str(inh_background) + ' of i_{ext, max} = ' + str(i_max))
+            print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            parameters['Background rate inhibitory'] = inh_background
+            simulation = magic.RandomBalancedNetwork(parameters)
+            simulation.start_simulation()
+            simulation.writeParametersToFile(curr_folder+'/parameters.txt')
+            i_average.append(average_firing_rate(simulation.df_in, num_i_neurons, t_min, t_max))
+            e_average.append(average_firing_rate(simulation.df_ex, num_e_neurons, t_min, t_max))
+            print('Average firing rate for inhibitory population: '+
+                  str(i_average[-1]))
+            print('Average firing rate for excitatory population: '+
+                  str(e_average[-1]))
+        return i_average, e_average, i_ext
+    delay_visualisation_linear(parameters, curr_folder+'/delay.png')
+    weightVisualisation(parameters, curr_folder+'/weights.pdf')
+    j_ee_min = 3
+    j_ee_num = 24
+    j_ee_max = 12
+    j_ee = np.linspace(j_ee_min, j_ee_max, j_ee_num)
+    for j_ in j_ee:
+        # parameters['Jei'] = j_
+        parameters['Jee'] = j_
+        i_average, e_average, i_ext = e_i_of_i_ext()
+        plt.clf()
+        plt.plot(i_ext, i_average, label=r'$\hat{I}$')
+        plt.plot(i_ext, e_average, label=r'$\hat{E}$')
+        plt.xlabel(r'$i_{ext}$')
+        plt.ylabel(r'$\hat{\nu}$')
+        plt.legend()
+        plt.savefig(curr_folder+'/IE_vs_i_ext_j_ee_'+str(round(j_,1))+'.png')
 
 """
 --------------
