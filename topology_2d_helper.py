@@ -90,58 +90,41 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
     """
     Plot quiver Plot for different noise of E and I
     """
-    def e_i(e_ext, i_ext):
-        ...
     grid_points = parameters['Rows']*parameters['Columns']
     num_i_neurons = parameters['Number inhibitory cells']*grid_points
     num_e_neurons = parameters['Number excitational cells']*grid_points
     t_min = parameters['Time before stimulation']+parameters['Time of stimulation']
     t_max = t_min+parameters['Time after Stimulation']
-    def quiver_e_i(e_arange, i_arange):
+
+    def e_i(e_ext, i_ext):
+        """
+        Calculate average firing rate of population E and I for given external
+        noise
+        """
+        parameters['Background rate inhibitory'] = i_ext
+        parameters['Background rate excitatory'] = e_ext
+        simulation = magic.RandomBalancedNetwork(parameters)
+        simulation.start_simulation()
+        e_average = average_firing_rate(simulation.df_ex, num_e_neurons, t_min, t_max)
+        i_average = average_firing_rate(simulation.df_in, num_i_neurons, t_min, t_max)
+        return e_average, i_average
+
+    def calculate_from_mesh(e_arange, i_arange):
+        """
+        Calcualtes mesh grid for e_arange and i_arange
+        calculates return value for each grid point
+        returns E,I,e_average,i_average
+        """
         E, I = np.meshgrid(e_arange, i_arange)
-        for e,i in zip(E.ravel(), I.ravel()):
+        E_average, I_average = e_i(E,I)
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        surf = ax.plot_surface(E, I, E_average, cmap=cm.coolwarm)
+        plt.show()
 
+    calculate_from_mesh(np.arange(0.,30000.,10000.),
+                        np.arange(0.,30000.,10000.))
 
-    def e_i_of_i_ext():
-        i_start = 0.
-        i_max = 30000.
-        i_steps = 10
-        i_ext = np.linspace(i_start, i_max, i_steps)
-        i_average = []
-        e_average = []
-        for inh_background in i_ext:
-            print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-            print('Running "Tsodyks analysis" with currently i_{ext} = '
-                  + str(inh_background) + ' of i_{ext, max} = ' + str(i_max))
-            print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-            parameters['Background rate inhibitory'] = inh_background
-            simulation = magic.RandomBalancedNetwork(parameters)
-            simulation.start_simulation()
-            simulation.writeParametersToFile(curr_folder+'/parameters.txt')
-            i_average.append(average_firing_rate(simulation.df_in, num_i_neurons, t_min, t_max))
-            e_average.append(average_firing_rate(simulation.df_ex, num_e_neurons, t_min, t_max))
-            print('Average firing rate for inhibitory population: '+
-                  str(i_average[-1]))
-            print('Average firing rate for excitatory population: '+
-                  str(e_average[-1]))
-        return i_average, e_average, i_ext
-    delay_visualisation_linear(parameters, curr_folder+'/delay.png')
-    weightVisualisation(parameters, curr_folder+'/weights.pdf')
-    j_ee_min = 3
-    j_ee_num = 24
-    j_ee_max = 12
-    j_ee = np.linspace(j_ee_min, j_ee_max, j_ee_num)
-    for j_ in j_ee:
-        # parameters['Jei'] = j_
-        parameters['Jee'] = j_
-        i_average, e_average, i_ext = e_i_of_i_ext()
-        plt.clf()
-        plt.plot(i_ext, i_average, label=r'$\hat{I}$')
-        plt.plot(i_ext, e_average, label=r'$\hat{E}$')
-        plt.xlabel(r'$i_{ext}$')
-        plt.ylabel(r'$\hat{\nu}$')
-        plt.legend()
-        plt.savefig(curr_folder+'/IE_vs_i_ext_j_ee_'+str(round(j_,1))+'.png')
 
 """
 --------------

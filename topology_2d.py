@@ -41,9 +41,9 @@ parameters = {'Name': 'tsodyks',
               'Stimulus rate': 40000.,
               'Background rate excitatory': 15000.,
               'Background rate inhibitory': 10000.,
-              'Time before stimulation': 1000.,
+              'Time before stimulation': 100.,
               'Time of stimulation': 0.,
-              'Time after Stimulation': 1000.,
+              'Time after Stimulation': 100.,
               }
 
 """
@@ -63,7 +63,8 @@ def test():
 """
 Run Program
 """
-tsodyksAnalysis()
+magic.tsodyks_analysis_quiver(parameters)
+# tsodyksAnalysis()
 # test()
 
 def automation():
