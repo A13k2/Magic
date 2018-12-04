@@ -87,6 +87,7 @@ def tsodyks_analysis(parameters, curr_folder='.'):
 
 
 def tsodyks_analysis_quiver(parameters, curr_folder='.'):
+    import pickle
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
@@ -100,7 +101,7 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
     t_max = t_min+parameters['Time after Stimulation']
 
     @np.vectorize
-    def e_i(e_ext, i_ext):
+    def e_i(e_ext, i_ext, paramters):
         """
         Calculate average firing rate of population E and I for given external
         noise
@@ -120,7 +121,15 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
         returns E,I,e_average,i_average
         """
         E, I = np.meshgrid(e_arange, i_arange)
-        E_average, I_average = e_i(E,I)
+        pickle.dump((E,I), open('pickle/E_I.p', 'wb'))
+        for j_ee in np.arange(1.,10.,1.):
+            parameters['Jee'] = j_ee
+            E_average, I_average = e_i(E, I, parameters)
+            pickle.dump((E_average, I_average),
+                        open('pickle/e_i_'+str(j_ee).replace('.','_')+'.p',
+                             'wb'))
+
+    def plot():
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         surf = ax.plot_surface(E, I, E_average, cmap=cm.coolwarm)
