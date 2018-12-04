@@ -3,7 +3,7 @@ import os
 import nest.topology as tp
 import numpy as np
 import matplotlib
-matplotlib.use('AGG')
+# matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 import nest.raster_plot
 import pandas as pd
@@ -87,6 +87,9 @@ def tsodyks_analysis(parameters, curr_folder='.'):
 
 
 def tsodyks_analysis_quiver(parameters, curr_folder='.'):
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib import cm
+    from matplotlib.ticker import LinearLocator, FormatStrFormatter
     """
     Plot quiver Plot for different noise of E and I
     """
@@ -96,6 +99,7 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
     t_min = parameters['Time before stimulation']+parameters['Time of stimulation']
     t_max = t_min+parameters['Time after Stimulation']
 
+    @np.vectorize
     def e_i(e_ext, i_ext):
         """
         Calculate average firing rate of population E and I for given external
@@ -120,10 +124,21 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
         fig = plt.figure()
         ax = fig.gca(projection='3d')
         surf = ax.plot_surface(E, I, E_average, cmap=cm.coolwarm)
+        ax.set_xlabel('$E_{noise}$')
+        ax.set_ylabel('$I_{noise}$')
+        ax.set_zlabel(r'$\hat{\nu_e}$')
+        plt.show()
+        plt.clf()
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        surf = ax.plot_surface(E, I, I_average, cmap=cm.coolwarm)
+        ax.set_xlabel('$E_{noise}$')
+        ax.set_ylabel('$I_{noise}$')
+        ax.set_zlabel(r'$\hat{\nu_i}$')
         plt.show()
 
-    calculate_from_mesh(np.arange(0.,30000.,10000.),
-                        np.arange(0.,30000.,10000.))
+    calculate_from_mesh(np.arange(0.,30000.,2000.),
+                        np.arange(0.,30000.,2000.))
 
 
 """
