@@ -146,8 +146,8 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
         ax.set_zlabel(r'$\hat{\nu_i}$')
         plt.show()
 
-    calculate_from_mesh(np.arange(0.,30000.,2000.),
-                        np.arange(0.,30000.,2000.))
+    calculate_from_mesh(np.arange(0.,30000.,1000.),
+                        np.arange(0.,30000.,1000.))
 
 
 """
