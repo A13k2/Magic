@@ -39,11 +39,11 @@ parameters = {'Name': 'tsodyks',
               'i2i delay': 1.0,
               'delay growth multiplier': 2,
               'Stimulus rate': 40000.,
-              'Background rate excitatory': 15000.,
-              'Background rate inhibitory': 10000.,
-              'Time before stimulation': 500.,
+              'Background rate excitatory': 20000.,
+              'Background rate inhibitory': 20000.,
+              'Time before stimulation': 300.,
               'Time of stimulation': 0.,
-              'Time after Stimulation': 500.,
+              'Time after Stimulation': 300.,
               }
 
 """
@@ -63,6 +63,7 @@ def test():
 """
 Run Program
 """
+# magic.average_firng_rates(parameters)
 magic.tsodyks_analysis_quiver(parameters)
 # tsodyksAnalysis()
 # test()

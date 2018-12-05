@@ -32,6 +32,29 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
     rasterPlotLazy(simulation, curr_folder)
     # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
 
+def average_firng_rates(parameters, curr_folder='.'):
+    """
+    simulates network with parameters and saves values in pickle file
+    """
+    import pickle
+    simulation = magic.RandomBalancedNetwork(parameters)
+    simulation.start_simulation()
+    num_i_neurons, num_e_neurons = num_of_neurons(parameters)
+    average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
+    average_i = firing_rate_time(simulation.df_in, num_i_neurons)
+    pickle.dump((average_e, average_i), open('pickle/trace_test.p', 'wb'))
+
+def firing_rate_time(df, num_neurons, num_bins=10):
+    bins = np.linspace(df['Time'].min(), df['Time'].max(), num_bins)
+    groups = df.groupby(pd.cut(df['Time'], bins))
+    groups = groups['Time'].count()/num_neurons
+    for g, ind in zip(groups, groups.index):
+        groups[ind] = g/(ind.right-ind.left)*1000.
+    return groups
+
+def num_of_neurons(parameters):
+    grid_size = parameters['Columns']*parameters['Rows']
+    return (parameters['Number inhibitory cells']*grid_size, parameters['Number excitational cells']*grid_size)
 
 def tsodyks_analysis(parameters, curr_folder='.'):
     """
