@@ -85,15 +85,15 @@ def tsodyks_analysis(parameters, curr_folder='.'):
         plt.legend()
         plt.savefig(curr_folder+'/IE_vs_i_ext_j_ee_'+str(round(j_,1))+'.png')
 
-
+# TODO: rename!!!
 def tsodyks_analysis_quiver(parameters, curr_folder='.'):
+    """
+    Plot quiver Plot for different noise of E and I
+    """
     import pickle
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
-    """
-    Plot quiver Plot for different noise of E and I
-    """
     grid_points = parameters['Rows']*parameters['Columns']
     num_i_neurons = parameters['Number inhibitory cells']*grid_points
     num_e_neurons = parameters['Number excitational cells']*grid_points
@@ -128,23 +128,6 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
             pickle.dump((E_average, I_average),
                         open('pickle/e_i_'+str(j_ee).replace('.','_')+'.p',
                              'wb'))
-
-    def plot():
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-        surf = ax.plot_surface(E, I, E_average, cmap=cm.coolwarm)
-        ax.set_xlabel('$E_{noise}$')
-        ax.set_ylabel('$I_{noise}$')
-        ax.set_zlabel(r'$\hat{\nu_e}$')
-        plt.show()
-        plt.clf()
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-        surf = ax.plot_surface(E, I, I_average, cmap=cm.coolwarm)
-        ax.set_xlabel('$E_{noise}$')
-        ax.set_ylabel('$I_{noise}$')
-        ax.set_zlabel(r'$\hat{\nu_i}$')
-        plt.show()
 
     calculate_from_mesh(np.arange(0.,30000.,1000.),
                         np.arange(0.,30000.,1000.))
