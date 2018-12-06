@@ -20,8 +20,8 @@ parameters = {'Name': 'tsodyks',
               'Sigma excitational': 0.1,
               'Radius inhibitory': 0.2,
               'Sigma inhibitory': 0.1,
-              'Jee': 3.,
-              'Jii': 3.,
+              'Jee': 6.,
+              'Jii': 1.,
               'Jei': 3.,
               'Jie': -3.,
               'Jee Connectivity': 0.4,
@@ -30,19 +30,19 @@ parameters = {'Name': 'tsodyks',
               'Jie Connectivity': 0.4,
               'Number excitational cells': 5,
               'Number inhibitory cells': 5,
-              'Weight Stimulus': 0., # old: -3000.
-              'Radius stimulus': 0.1,
-              'Sigma Stimulus': 0.05,
+              'Weight Stimulus': 10., # old: -3000.
+              'Radius stimulus': 0.5,
+              'Sigma Stimulus': 0.5,
               'e2e delay': 1.0,
               'e2i delay': 1.0,
               'i2e delay': 1.0,
               'i2i delay': 1.0,
               'delay growth multiplier': 2,
               'Stimulus rate': 40000.,
-              'Background rate excitatory': 20000.,
-              'Background rate inhibitory': 20000.,
+              'Background rate excitatory': 25000.,
+              'Background rate inhibitory': 15000.,
               'Time before stimulation': 300.,
-              'Time of stimulation': 0.,
+              'Time of stimulation': 100.,
               'Time after Stimulation': 300.,
               }
 
@@ -63,8 +63,8 @@ def test():
 """
 Run Program
 """
-# magic.average_firng_rates(parameters)
-magic.tsodyks_analysis_quiver(parameters)
+magic.average_firng_rates(parameters)
+# magic.tsodyks_analysis_quiver(parameters)
 # tsodyksAnalysis()
 # test()
 

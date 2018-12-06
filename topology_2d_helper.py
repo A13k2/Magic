@@ -37,14 +37,21 @@ def average_firng_rates(parameters, curr_folder='.'):
     simulates network with parameters and saves values in pickle file
     """
     import pickle
-    simulation = magic.RandomBalancedNetwork(parameters)
-    simulation.start_simulation()
     num_i_neurons, num_e_neurons = num_of_neurons(parameters)
-    average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
-    average_i = firing_rate_time(simulation.df_in, num_i_neurons)
-    pickle.dump((average_e, average_i), open('pickle/trace_test.p', 'wb'))
+    # for jee in np.arange(1., 10., 1.):
+        # parameters['Jee'] = jee
+    for back_e in np.arange(15000., 30000., 5000.):
+        for stim_weight in [-1., 1.]:
+            parameters['Stimulus rate'] = back_e
+            parameters['Weight Stimulus'] = stim_weight
+            simulation = magic.RandomBalancedNetwork(parameters)
+            simulation.start_simulation()
+            average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
+            average_i = firing_rate_time(simulation.df_in, num_i_neurons)
+            with open('pickle/back_e/exc_'+str(int(back_e/1000.))+'_'+str(int(stim_weight))+'.p','wb') as f:
+                pickle.dump((average_e, average_i), f)
 
-def firing_rate_time(df, num_neurons, num_bins=10):
+def firing_rate_time(df, num_neurons, num_bins=20):
     bins = np.linspace(df['Time'].min(), df['Time'].max(), num_bins)
     groups = df.groupby(pd.cut(df['Time'], bins))
     groups = groups['Time'].count()/num_neurons
@@ -58,8 +65,7 @@ def num_of_neurons(parameters):
 
 def tsodyks_analysis(parameters, curr_folder='.'):
     """
-    Plot average firing rate of populations E and I for different noise rate of
-    I
+    Plot average firing rate of populations E and I for different noise rate of I
     Saves different Plots for different J_ee
     """
     def e_i_of_i_ext():
@@ -152,8 +158,8 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
                         open('pickle/e_i_'+str(j_ee).replace('.','_')+'.p',
                              'wb'))
 
-    calculate_from_mesh(np.arange(0.,30000.,1000.),
-                        np.arange(0.,30000.,1000.))
+    calculate_from_mesh(np.arange(0.,90000.,9000.),
+                        np.arange(0.,90000.,9000.))
 
 
 """
@@ -870,6 +876,7 @@ class RandomBalancedNetwork:
                             'kernel': {'gaussian': {'p_center': 1., 'sigma': self.parameters['Sigma Stimulus']}},
                             'mask': {'circular': {'radius': self.parameters['Radius stimulus']},
                                      'anchor': [0., 0.]},
+                            # 'targets': {'model': 'inhi'},
                             'targets': {'model': 'exci'},
                             'synapse_model': 'inh_strong'}
         tp.ConnectLayers(stim2, self.l, self.cdict_stim2)
