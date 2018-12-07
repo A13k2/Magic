@@ -3,7 +3,7 @@ import os
 import nest.topology as tp
 import numpy as np
 import matplotlib
-# matplotlib.use('AGG')
+matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 import nest.raster_plot
 import pandas as pd
@@ -21,6 +21,7 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
     simulation = magic.RandomBalancedNetwork(parameters)
     simulation.start_simulation()
     simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+    simulation.pickle_dump(curr_folder)
     makeDir(curr_folder+'/excitatory_neurons')
     makeDir(curr_folder+'/inhibitory_neurons')
     stimulationControlLazy(simulation, curr_folder)
@@ -38,18 +39,18 @@ def average_firng_rates(parameters, curr_folder='.'):
     """
     import pickle
     num_i_neurons, num_e_neurons = num_of_neurons(parameters)
-    # for jee in np.arange(1., 10., 1.):
-        # parameters['Jee'] = jee
-    for back_e in np.arange(15000., 30000., 5000.):
-        for stim_weight in [-1., 1.]:
-            parameters['Stimulus rate'] = back_e
-            parameters['Weight Stimulus'] = stim_weight
-            simulation = magic.RandomBalancedNetwork(parameters)
-            simulation.start_simulation()
-            average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
-            average_i = firing_rate_time(simulation.df_in, num_i_neurons)
-            with open('pickle/back_e/exc_'+str(int(back_e/1000.))+'_'+str(int(stim_weight))+'.p','wb') as f:
-                pickle.dump((average_e, average_i), f)
+    for jee in [1.,3.,7.]:
+        for back_e in [15000., 30000.]:
+            for stim_weight in [-1., 1.]:
+                parameters['Jee'] = jee
+                parameters['Stimulus rate'] = back_e
+                parameters['Weight Stimulus'] = stim_weight
+                simulation = magic.RandomBalancedNetwork(parameters)
+                simulation.start_simulation()
+                average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
+                average_i = firing_rate_time(simulation.df_in, num_i_neurons)
+                with open('pickle/stimulus/exc_'+str(int(jee))+'_'+str(int(back_e/1000.))+'_'+str(int(stim_weight))+'.p','wb') as f:
+                    pickle.dump((average_e, average_i), f)
 
 def firing_rate_time(df, num_neurons, num_bins=20):
     bins = np.linspace(df['Time'].min(), df['Time'].max(), num_bins)
@@ -151,15 +152,17 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
         """
         E, I = np.meshgrid(e_arange, i_arange)
         pickle.dump((E,I), open('pickle/E_I.p', 'wb'))
-        for j_ee in np.arange(1.,10.,1.):
-            parameters['Jee'] = j_ee
-            E_average, I_average = e_i(E, I, parameters)
-            pickle.dump((E_average, I_average),
-                        open('pickle/e_i_'+str(j_ee).replace('.','_')+'.p',
-                             'wb'))
+        for j_ii in np.arange(1.,9.,2.):
+            parameters['Jii'] = j_ii
+            for j_ee in np.arange(1.,9.,2.):
+                parameters['Jee'] = j_ee
+                E_average, I_average = e_i(E, I, parameters)
+                pickle.dump((E_average, I_average),
+                            open('pickle/e_i_jii'+str(j_ii).replace('.','_')+'_jee_'+str(j_ee).replace('.','_')+'.p',
+                                 'wb'))
 
-    calculate_from_mesh(np.arange(0.,90000.,9000.),
-                        np.arange(0.,90000.,9000.))
+    calculate_from_mesh(np.arange(0.,40000.,2000.),
+                        np.arange(0.,40000.,2000.))
 
 
 """
@@ -631,7 +634,7 @@ def spike_count_histogram_plot(df, t_start, t_stop, t_step, number_of_neurons, g
     :param grid_size:
     :return:
     """
-    x,y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
+    x, y = spike_count_histogram(df, t_start, t_stop, t_step, number_of_neurons, grid_size)
     return plt.bar(x[:-1], y, width=0.9*t_step)
 
 
@@ -876,8 +879,8 @@ class RandomBalancedNetwork:
                             'kernel': {'gaussian': {'p_center': 1., 'sigma': self.parameters['Sigma Stimulus']}},
                             'mask': {'circular': {'radius': self.parameters['Radius stimulus']},
                                      'anchor': [0., 0.]},
-                            # 'targets': {'model': 'inhi'},
-                            'targets': {'model': 'exci'},
+                            'targets': {'model': 'inhi'},
+                            # 'targets': {'model': 'exci'},
                             'synapse_model': 'inh_strong'}
         tp.ConnectLayers(stim2, self.l, self.cdict_stim2)
         rec = nest.Create("spike_detector")
@@ -908,6 +911,15 @@ class RandomBalancedNetwork:
         self.events_in = nest.GetStatus(rec_in_true, "events")[0]
         self.df_ex = makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
         self.df_in = makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
+
+    def pickle_dump(self, folder):
+        import pickle
+        with open(folder+'/parameter.pickle', 'wb') as f:
+            pickle.dump(self.parameters, f)
+        self.df_ex.to_pickle(folder+'/df_ex.pickle')
+        self.df_in.to_pickle(folder+'/df_in.pickle')
+        with open(folder+'/rec.pickle','wb') as f:
+            pickle.dump((self.events_ex, self.events_in), f)
 
     def writeParametersToFile(self, file):
         """

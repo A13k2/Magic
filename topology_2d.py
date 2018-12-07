@@ -9,7 +9,7 @@ matplotlib.use('Agg')
 
 base_folder = 'figures/'
 date_folder = 'tsodyks_analysis/'
-sub_folder = '18-11-30/'
+sub_folder = '18-12-07/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
 
@@ -20,8 +20,8 @@ parameters = {'Name': 'tsodyks',
               'Sigma excitational': 0.1,
               'Radius inhibitory': 0.2,
               'Sigma inhibitory': 0.1,
-              'Jee': 6.,
-              'Jii': 1.,
+              'Jee': 3.,
+              'Jii': 3.,
               'Jei': 3.,
               'Jie': -3.,
               'Jee Connectivity': 0.4,
@@ -30,9 +30,9 @@ parameters = {'Name': 'tsodyks',
               'Jie Connectivity': 0.4,
               'Number excitational cells': 5,
               'Number inhibitory cells': 5,
-              'Weight Stimulus': 10., # old: -3000.
-              'Radius stimulus': 0.5,
-              'Sigma Stimulus': 0.5,
+              'Weight Stimulus': 0., # old: -3000.
+              'Radius stimulus': 0.1,
+              'Sigma Stimulus': 0.05,
               'e2e delay': 1.0,
               'e2i delay': 1.0,
               'i2e delay': 1.0,
@@ -41,9 +41,9 @@ parameters = {'Name': 'tsodyks',
               'Stimulus rate': 40000.,
               'Background rate excitatory': 25000.,
               'Background rate inhibitory': 15000.,
-              'Time before stimulation': 300.,
-              'Time of stimulation': 100.,
-              'Time after Stimulation': 300.,
+              'Time before stimulation': 200.,
+              'Time of stimulation': 0.,
+              'Time after Stimulation': 200.,
               }
 
 """
@@ -55,7 +55,7 @@ def tsodyksAnalysis():
     magic.tsodyks_analysis(parameters, curr_folder)
 
 def test():
-    curr_folder = base_folder + sub_folder + "jee_4_25k"
+    curr_folder = base_folder + sub_folder + "test1_inh_decrease_middle"
     magic.makeDir(curr_folder+'/excitatory_neurons')
     magic.makeDir(curr_folder+'/inhibitory_neurons')
     magic.simulationAndAnalysis(parameters, curr_folder)
@@ -63,8 +63,8 @@ def test():
 """
 Run Program
 """
-magic.average_firng_rates(parameters)
-# magic.tsodyks_analysis_quiver(parameters)
+# magic.average_firng_rates(parameters)
+magic.tsodyks_analysis_quiver(parameters)
 # tsodyksAnalysis()
 # test()
 
