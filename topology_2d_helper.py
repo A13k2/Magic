@@ -34,10 +34,11 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
     # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
 
 def simulate_and_dump(parameters, folder):
+    magic.makeDir(folder)
     simulation = magic.RandomBalancedNetwork(parameters)
     simulation.start_simulation()
-    simulation.writeParametersToFile(curr_folder + '/parameters.txt')
-    simulation.pickle_dump(curr_folder)
+    simulation.writeParametersToFile(folder + '/parameters.txt')
+    simulation.pickle_dump(folder)
 
 
 def average_firng_rates(parameters, curr_folder='.'):
@@ -602,8 +603,12 @@ def distance_firing_rate(df, number_of_bins, title):
     print(duration)
     grouped = df.groupby([pd.cut(df['Distance from Center'], number_of_bins), pd.cut(df['Time'], number_of_bins)])
     neurons_per_area = df.groupby(pd.cut(df['Distance from Center'], number_of_bins))['Sender'].nunique()
-    grouped.count().unstack().divide(neurons_per_area,
-                                     axis=0).multiply(1000./(duration/number_of_bins))['Time'].plot(title=title)
+#     Magic to change index from categorical to right side of interval
+    tmp = grouped.count().unstack().divide(neurons_per_area, axis=0).multiply(1000./(duration/number_of_bins))['Distance from Center']
+    tmp.index = [a.right for a in tmp.index]
+    ax = tmp.plot(title=title)
+    ax.set_ylabel(r'$\hat{\nu}$')
+    return ax
 
 def spike_count_histogram_plot(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
     """
