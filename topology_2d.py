@@ -21,7 +21,7 @@ parameters = {'Name': 'tsodyks',
               'Radius inhibitory': 0.2,
               'Sigma inhibitory': 0.1,
               'Jee': 3.,
-              'Jii': 3.,
+              'Jii': 1.,
               'Jei': 3.,
               'Jie': -3.,
               'Jee Connectivity': 0.4,
@@ -30,7 +30,7 @@ parameters = {'Name': 'tsodyks',
               'Jie Connectivity': 0.4,
               'Number excitational cells': 5,
               'Number inhibitory cells': 5,
-              'Weight Stimulus': 0., # old: -3000.
+              'Weight Stimulus': -10., # old: -3000.
               'Radius stimulus': 0.1,
               'Sigma Stimulus': 0.05,
               'e2e delay': 1.0,
@@ -41,9 +41,9 @@ parameters = {'Name': 'tsodyks',
               'Stimulus rate': 40000.,
               'Background rate excitatory': 25000.,
               'Background rate inhibitory': 15000.,
-              'Time before stimulation': 200.,
-              'Time of stimulation': 0.,
-              'Time after Stimulation': 200.,
+              'Time before stimulation': 500.,
+              'Time of stimulation': 100.,
+              'Time after Stimulation': 500.,
               }
 
 """
@@ -60,8 +60,8 @@ def test():
     magic.makeDir(curr_folder+'/inhibitory_neurons')
     magic.simulationAndAnalysis(parameters, curr_folder)
 
-path = '/home/drossel/Magic/pickle/'
-current_subfolder = 'jii_3'
+path = '/home/adrossel/Magic/pickle/'
+current_subfolder = 'jii_3_edge_wrap'
 magic.simulate_and_dump(parameters, path+current_subfolder)
 
 """

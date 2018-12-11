@@ -788,7 +788,7 @@ class RandomBalancedNetwork:
                                  'columns': self.parameters['Columns'],
                                  'elements': ['exci', self.parameters['Number excitational cells'],
                                               'inhi', self.parameters['Number inhibitory cells']],
-                                 'edge_wrap': False})
+                                 'edge_wrap': True})
         cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': parameters['Jei Connectivity'], 'sigma': self.parameters['Sigma excitational']}},
