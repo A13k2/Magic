@@ -60,11 +60,15 @@ def test():
     magic.makeDir(curr_folder+'/inhibitory_neurons')
     magic.simulationAndAnalysis(parameters, curr_folder)
 
+path = '/home/drossel/Magic/pickle/'
+current_subfolder = 'jii_3'
+magic.simulate_and_dump(parameters, path+current_subfolder)
+
 """
 Run Program
 """
 # magic.average_firng_rates(parameters)
-magic.tsodyks_analysis_quiver(parameters)
+# magic.tsodyks_analysis_quiver(parameters)
 # tsodyksAnalysis()
 # test()
 

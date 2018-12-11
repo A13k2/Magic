@@ -22,16 +22,23 @@ def simulationAndAnalysis(parameters, curr_folder='.'):
     simulation.start_simulation()
     simulation.writeParametersToFile(curr_folder + '/parameters.txt')
     simulation.pickle_dump(curr_folder)
-    makeDir(curr_folder+'/excitatory_neurons')
-    makeDir(curr_folder+'/inhibitory_neurons')
-    stimulationControlLazy(simulation, curr_folder)
-    #clusteringPlotLazy(simulation, parameters, curr_folder)
-    #fanoFactorTimeLazy(simulation, curr_folder)
-    #recordElectrodeEnviromentLazy(simulation, curr_folder)
-    recordElectrodeLazy(simulation, curr_folder)
-    spikeCountHistogramLazy(simulation, curr_folder)
-    rasterPlotLazy(simulation, curr_folder)
+    # makeDir(curr_folder+'/excitatory_neurons')
+    # makeDir(curr_folder+'/inhibitory_neurons')
+    # stimulationControlLazy(simulation, curr_folder)
+    # #clusteringPlotLazy(simulation, parameters, curr_folder)
+    # #fanoFactorTimeLazy(simulation, curr_folder)
+    # #recordElectrodeEnviromentLazy(simulation, curr_folder)
+    # recordElectrodeLazy(simulation, curr_folder)
+    # spikeCountHistogramLazy(simulation, curr_folder)
+    # rasterPlotLazy(simulation, curr_folder)
     # distancePlotsLazy(1000., 2000., 500., simulation, curr_folder)
+
+def simulate_and_dump(parameters, folder):
+    simulation = magic.RandomBalancedNetwork(parameters)
+    simulation.start_simulation()
+    simulation.writeParametersToFile(curr_folder + '/parameters.txt')
+    simulation.pickle_dump(curr_folder)
+
 
 def average_firng_rates(parameters, curr_folder='.'):
     """
@@ -590,38 +597,13 @@ def clusteringPlot(df, warmUpTime, startRecord, stopRecord, percChange=0.05, sta
         dec_array.append(decreased)
     return inc_array, avr_array, dec_array
 
-
-def distanceFiringRate(eventSenders, ctr, min=0, max=0.5, bins=5, neurons_per_gridpoint=8, title='Firing Rate vs. Distance', gridSize=400):
-    """
-    Plots firing Rates of Time for different Distances
-    :param eventSenders: Events perceived from Spike Recording device
-    :param ctr: Center Element
-    :param min: Minimum distance
-    :param max: Maximum distance
-    :param bins: Number of bins (distance)
-    :param neurons_per_gridpoint: Number of Neurons of the type to be plotted per grid point
-    :param title: Title of the Plot
-    :param gridSize: Number of grid points in the network
-    :return:
-    """
-    senders = [i for i in eventSenders['senders']]
-    times = [i for i in eventSenders['times']]
-    distances = [i for i in tp.Distance(senders, [ctr])]
-    df = pd.DataFrame({'Sender': senders,
-                       'Time': times,
-                       'Distance': distances})
-    df = df[df['Distance'] <= 0.5]
-    grouped = df.groupby([pd.cut(df['Distance'], 10), pd.cut(df['Time'], 10)])
-    grouped = grouped.count()['Sender'].unstack()
-    #Calculate Neurons per area
-    dist = pd.DataFrame({'Distance': [i for i in tp.Distance([i for i in range(2, gridSize+2)], [ctr])]})
-    dist = dist[dist['Distance'] <= 0.5]
-    neuronsPerArea = dist.groupby(pd.cut(dist['Distance'], 10)).count()['Distance'].multiply(neurons_per_gridpoint)
-    grouped = grouped.divide(neuronsPerArea, axis=0)
-    grouped.plot(title=title)
-
-
-
+def distance_firing_rate(df, number_of_bins, title):
+    duration = df['Time'].values.max() - df['Time'].values.min()
+    print(duration)
+    grouped = df.groupby([pd.cut(df['Distance from Center'], number_of_bins), pd.cut(df['Time'], number_of_bins)])
+    neurons_per_area = df.groupby(pd.cut(df['Distance from Center'], number_of_bins))['Sender'].nunique()
+    grouped.count().unstack().divide(neurons_per_area,
+                                     axis=0).multiply(1000./(duration/number_of_bins))['Time'].plot(title=title)
 
 def spike_count_histogram_plot(df, t_start, t_stop, t_step, number_of_neurons, grid_size):
     """
