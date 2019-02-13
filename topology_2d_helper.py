@@ -1,4 +1,15 @@
 import nest
+# Set verbosity to send warnings or higher
+# M_ALL=0,  display all messages
+# M_DEBUG=5,  display debugging messages and above
+# M_STATUS=7,  display status messages and above
+# M_INFO=10, display information messages and above
+# M_DEPRECATED=18, display deprecation warnings and above
+# M_WARNING=20, display warning messages and above
+# M_ERROR=30, display error messages and above
+# M_FATAL=40, display failure messages and above
+# M_QUIET=100, suppress all messages
+nest.set_verbosity(20)
 import os
 import nest.topology as tp
 import numpy as np
@@ -8,6 +19,7 @@ import matplotlib.pyplot as plt
 import nest.raster_plot
 import pandas as pd
 import topology_2d_helper as magic
+from progressbar import *
 
 
 """
@@ -46,19 +58,26 @@ def average_firng_rates(parameters, curr_folder='.'):
     simulates network with parameters and saves values in pickle file
     """
     import pickle
+    parameters['Time of stimulation'] = 1000.
     num_i_neurons, num_e_neurons = num_of_neurons(parameters)
-    for jee in [1.,3.,7.]:
-        for back_e in [15000., 30000.]:
-            for stim_weight in [-1., 1.]:
-                parameters['Jee'] = jee
-                parameters['Stimulus rate'] = back_e
-                parameters['Weight Stimulus'] = stim_weight
-                simulation = magic.RandomBalancedNetwork(parameters)
-                simulation.start_simulation()
-                average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
-                average_i = firing_rate_time(simulation.df_in, num_i_neurons)
-                with open('pickle/stimulus/exc_'+str(int(jee))+'_'+str(int(back_e/1000.))+'_'+str(int(stim_weight))+'.p','wb') as f:
-                    pickle.dump((average_e, average_i), f)
+    for target in ['exci', 'inhi']:
+        for jee in [5.]:
+            for back_i in [0., 300., 600., 1200.]:
+                for stim_weight in [-300000., 300000.]:
+                    parameters['target'] = target
+                    parameters['Jee'] = jee
+                    parameters['Weight Stimulus'] = stim_weight
+                    parameters['Background rate inhibitory'] = back_i
+                    simulation = magic.RandomBalancedNetwork(parameters)
+                    simulation.start_simulation()
+                    average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
+                    average_i = firing_rate_time(simulation.df_in, num_i_neurons)
+                    with open('%s/stimulus/%s_%d_%02d_%d.p' % (
+                        curr_folder, target[:-1], jee, int(back_i/100.), stim_weight
+                        ), 'wb') as f:
+                    # with open(curr_folder + '/stimulus/' + target[:-1] + '_' +
+                            # str(int(jee))+'_'+str(int(back_i/100.))+'_'+str(int(stim_weight))+'.p','wb') as f:
+                        pickle.dump((average_e, average_i), f)
 
 def firing_rate_time(df, num_neurons, num_bins=20):
     bins = np.linspace(df['Time'].min(), df['Time'].max(), num_bins)
@@ -105,7 +124,7 @@ def tsodyks_analysis(parameters, curr_folder='.'):
             print('Average firing rate for excitatory population: '+
                   str(e_average[-1]))
         return i_average, e_average, i_ext
-    delay_visualisation_linear(parameters, curr_folder+'/delay.png')
+    delay_visualisation_linear(parameters, curr_folder+'/delay.pdf')
     weightVisualisation(parameters, curr_folder+'/weights.pdf')
     j_ee_min = 3
     j_ee_num = 24
@@ -123,15 +142,15 @@ def tsodyks_analysis(parameters, curr_folder='.'):
         plt.legend()
         plt.savefig(curr_folder+'/IE_vs_i_ext_j_ee_'+str(round(j_,1))+'.png')
 
-# TODO: rename!!!
-def tsodyks_analysis_quiver(parameters, curr_folder='.'):
+def tsodyks_analysis_phase_plane(parameters, curr_folder='.', e_range=np.arange(0., 300., 15.),
+            i_range=np.arange(0., 300., 15.), j_ee_range=np.arange(1.,9.,2.)):
     """
     Plot quiver Plot for different noise of E and I
     """
     import pickle
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    from matplotlib.ticker import LinearLocator, FormatStrFormatter
+    sim_size = 0
+    it = 0
+    pbar = ProgressBar()
     grid_points = parameters['Rows']*parameters['Columns']
     num_i_neurons = parameters['Number inhibitory cells']*grid_points
     num_e_neurons = parameters['Number excitational cells']*grid_points
@@ -150,27 +169,34 @@ def tsodyks_analysis_quiver(parameters, curr_folder='.'):
         simulation.start_simulation()
         e_average = average_firing_rate(simulation.df_ex, num_e_neurons, t_min, t_max)
         i_average = average_firing_rate(simulation.df_in, num_i_neurons, t_min, t_max)
+        nonlocal it
+        pbar.update(it)
+        it += 1
         return e_average, i_average
 
     def calculate_from_mesh(e_arange, i_arange):
         """
         Calcualtes mesh grid for e_arange and i_arange
         calculates return value for each grid point
-        returns E,I,e_average,i_average
+        returns E,I,e_phase_plane_analysis/new/average,i_average
         """
         E, I = np.meshgrid(e_arange, i_arange)
-        pickle.dump((E,I), open('pickle/E_I.p', 'wb'))
-        for j_ii in np.arange(1.,9.,2.):
-            parameters['Jii'] = j_ii
-            for j_ee in np.arange(1.,9.,2.):
-                parameters['Jee'] = j_ee
-                E_average, I_average = e_i(E, I, parameters)
-                pickle.dump((E_average, I_average),
-                            open('pickle/e_i_jii'+str(j_ii).replace('.','_')+'_jee_'+str(j_ee).replace('.','_')+'.p',
-                                 'wb'))
+        nonlocal sim_size
+        sim_size = E.size
+        pickle.dump((E,I), open(curr_folder+'E_I.p', 'wb'))
+        pickle.dump(parameters, open(curr_folder+'parameter.p', 'wb'))
+        for j_ee in j_ee_range:
+            print("")
+            print("Starting simulations for J_ee = " + str(j_ee))
+            nonlocal pbar
+            pbar = ProgressBar(widgets=[Percentage(), ' ', ETA(), ' ', Bar()], maxval=sim_size).start()
+            parameters['Jee'] = j_ee
+            E_average, I_average = e_i(E, I, parameters)
+            pickle.dump((E_average, I_average), open(curr_folder+'e_i_jee_'+str(j_ee).replace('.','_')+'.p', 'wb'))
+            nonlocal it
+            it = 0
 
-    calculate_from_mesh(np.arange(0.,40000.,2000.),
-                        np.arange(0.,40000.,2000.))
+    calculate_from_mesh(e_range, i_range)
 
 
 """
@@ -333,6 +359,16 @@ def gaussian(x, mu, sig, maximum=1.):
 Plot Helper
 -----------
 """
+def networkVisualizationLazy(parameters, folder):
+    '''
+    Plots topology, weights and more in a subfolder called network_visu
+    '''
+    delay_visualisation_linear(parameters, folder+'/delay.pdf')
+    weightVisualisation(parameters, folder+'/weights.pdf')
+    simulation = magic.RandomBalancedNetwork(parameters)
+    simulation.plotKernel(folder)
+
+
 def distancePlotsLazy(Start, End, Step, network, folder):
     for events, title, neurons_folder in zip([network.events_ex, network.events_in], ["Excitatory", "Inhibitory"], ['/excitatory_neurons', '/inhibitory_neurons']):
         for start, end in zip(np.arange(Start, End, Step), np.arange(Start + Step, End + Step, Step)):
@@ -771,7 +807,7 @@ class RandomBalancedNetwork:
         self.parameters = parameters
         self.gridSize = parameters['Columns']*parameters['Rows']
         nest.ResetKernel()
-        nest.SetKernelStatus({"resolution": 0.1, "print_time": True,
+        nest.SetKernelStatus({"resolution": 0.1, "print_time": False,
                               "overwrite_files": True,
                               "local_num_threads": 6
                              })
@@ -780,6 +816,7 @@ class RandomBalancedNetwork:
         nest.CopyModel('iaf_psc_alpha', 'inhi')
         nest.SetDefaults('inhi', neuron_params)
         nest.CopyModel('static_synapse', 'exc', {'weight': self.parameters['Jei']})
+        nest.CopyModel('static_synapse', 'background', {'weight': self.parameters['Background weight']})
         nest.CopyModel('static_synapse', 'inh', {'weight': self.parameters['Jie']})
         nest.CopyModel('static_synapse', 'exc_recurrent', {'weight': self.parameters['Jee']})
         nest.CopyModel('static_synapse', 'inh_recurrent', {'weight': self.parameters['Jii']})
@@ -788,8 +825,8 @@ class RandomBalancedNetwork:
                                  'columns': self.parameters['Columns'],
                                  'elements': ['exci', self.parameters['Number excitational cells'],
                                               'inhi', self.parameters['Number inhibitory cells']],
-                                 'edge_wrap': True})
-        cdict_e2i = {'connection_type': 'divergent',
+                                 'edge_wrap': False})
+        self.cdict_e2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': parameters['Jei Connectivity'], 'sigma': self.parameters['Sigma excitational']}},
                      'delays': {'linear': {'c': parameters['e2i delay'], 'a': parameters['e2i delay']*parameters['delay growth multiplier']}},
@@ -799,7 +836,7 @@ class RandomBalancedNetwork:
                      #'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
                      #'synapse_model': 'exc',
                      #'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
-        cdict_e2e = {'connection_type': 'divergent',
+        self.cdict_e2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius excitational']}},
                      'kernel': {'gaussian': {'p_center': parameters['Jee Connectivity'], 'sigma': self.parameters['Sigma excitational']}},
                      'delays': {'linear': {'c': parameters['e2e delay'], 'a': parameters['e2e delay']*parameters['delay growth multiplier']}},
@@ -809,7 +846,7 @@ class RandomBalancedNetwork:
                      #'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
                      #'synapse_model': 'exc_recurrent',
                      #'weights': {'uniform': {'min': parameters['Excitational Weight']*0.2, 'max': parameters['Excitational Weight']}}}
-        cdict_i2e = {'connection_type': 'divergent',
+        self.cdict_i2e = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
                      'kernel': {'gaussian': {'p_center': parameters['Jie Connectivity'], 'sigma': self.parameters['Sigma inhibitory']}},
                      'delays': {'linear': {'c': parameters['i2e delay'], 'a': parameters['i2e delay']*parameters['delay growth multiplier']}},
@@ -819,7 +856,7 @@ class RandomBalancedNetwork:
                      #'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
                      #'synapse_model': 'inh',
                      #'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
-        cdict_i2i = {'connection_type': 'divergent',
+        self.cdict_i2i = {'connection_type': 'divergent',
                      'mask': {'circular': {'radius': self.parameters['Radius inhibitory']}},
                      'kernel': {'gaussian': {'p_center': parameters['Jii Connectivity'], 'sigma': self.parameters['Sigma inhibitory']}},
                      'delays': {'linear': {'c': parameters['i2i delay'], 'a': parameters['i2i delay']*parameters['delay growth multiplier']}},
@@ -829,10 +866,10 @@ class RandomBalancedNetwork:
                      # 'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
                      # 'synapse_model': 'inh_recurrent',
                      # 'weights': {'uniform': {'max': parameters['Inhibitory Weight']*0.2, 'min': parameters['Inhibitory Weight']}}}
-        tp.ConnectLayers(self.l, self.l, cdict_e2i)
-        tp.ConnectLayers(self.l, self.l, cdict_e2e)
-        tp.ConnectLayers(self.l, self.l, cdict_i2i)
-        tp.ConnectLayers(self.l, self.l, cdict_i2e)
+        tp.ConnectLayers(self.l, self.l, self.cdict_e2i)
+        tp.ConnectLayers(self.l, self.l, self.cdict_e2e)
+        tp.ConnectLayers(self.l, self.l, self.cdict_i2i)
+        tp.ConnectLayers(self.l, self.l, self.cdict_i2e)
         """
         Creating Background
         """
@@ -844,7 +881,7 @@ class RandomBalancedNetwork:
         nest.SetStatus(background_e_leaves, {'rate': parameters['Background rate excitatory']})
         background_e_dict = {'connection_type': 'divergent',
                              'targets': {'model': 'exci'},
-                             'synapse_model': 'exc'}
+                             'synapse_model': 'background'}
         tp.ConnectLayers(background_e, self.l, background_e_dict)
         # Inhibitory Background
         background_i = tp.CreateLayer({'rows': 1,
@@ -854,7 +891,7 @@ class RandomBalancedNetwork:
         nest.SetStatus(background_i_leaves, {'rate': parameters['Background rate inhibitory']})
         background_i_dict = {'connection_type': 'divergent',
                              'targets': {'model': 'inhi'},
-                             'synapse_model': 'exc'}
+                             'synapse_model': 'background'}
         tp.ConnectLayers(background_i, self.l, background_i_dict)
         # Excitation/ Inhibition in center
         stim2 = tp.CreateLayer({'rows': 1,
@@ -866,13 +903,22 @@ class RandomBalancedNetwork:
                             'kernel': {'gaussian': {'p_center': 1., 'sigma': self.parameters['Sigma Stimulus']}},
                             'mask': {'circular': {'radius': self.parameters['Radius stimulus']},
                                      'anchor': [0., 0.]},
-                            'targets': {'model': 'inhi'},
+                            # 'targets': {'model': 'inhi'},  # set population
+                            # to be affected by stimulus here
                             # 'targets': {'model': 'exci'},
+                            'targets': {'model': self.parameters['target']},
                             'synapse_model': 'inh_strong'}
         tp.ConnectLayers(stim2, self.l, self.cdict_stim2)
-        rec = nest.Create("spike_detector")
-        nrns = nest.GetLeaves(self.l, local_only=True)[0]
-        nest.Connect(nrns, rec)
+        # Connect only one neurons per node to spike detector
+        self.rec_ex = nest.Create("spike_detector")
+        self.rec_in = nest.Create("spike_detector")
+        grid_points = self.parameters['Columns']*self.parameters['Rows']
+        number_exc_cells = grid_points*self.parameters['Number excitational cells']
+        # layer_exc = tuple(i for i in range(2, grid_points+2))
+        # layer_inh = tuple(i for i in range(number_exc_cells+2, number_exc_cells+grid_points+2))
+        # nest.Connect(layer_exc, self.rec_ex)
+        # nest.Connect(layer_inh, self.rec_in)
+        # Connect all neurons per node to spike detector
         self.rec_ex = tp.CreateLayer({'rows': 1,
                                       'columns': 1,
                                       'elements': 'spike_detector'})
@@ -886,6 +932,19 @@ class RandomBalancedNetwork:
                         'sources': {'model': 'inhi'}}
         tp.ConnectLayers(self.l, self.rec_in, cdict_rec_in)
 
+    def plotKernel(self, folder):
+        fig, ax = plt.subplots()
+        tp.PlotLayer(self.l, fig, nodesize=10)
+        ctr_elem = tp.FindCenterElement(self.l)
+        # import ipdb; ipdb.set_trace()
+        # tp.PlotKernel(ax, ctr_elem, mask=self.cdict_i2i['mask'], kern=self.cdict_i2i['kernel'])
+        tp.PlotTargets(ctr_elem, self.l, fig=fig, tgt_color='red',
+                mask=self.cdict_e2e['mask'], kernel=self.cdict_e2e['kernel'],
+                kernel_color='green', mask_color='green',
+                syn_type='exc_recurrent')
+        # tp.PlotKernel(ax, ctr_elem, mask=self.cdict_e2e['mask'], mask_color='green')
+        plt.savefig(folder+'/kernel.pdf')
+
     def start_simulation(self):
         nest.Simulate(self.parameters['Time before stimulation'])
         nest.SetStatus(self.stim2_i, {'rate': self.parameters['Stimulus rate']})
@@ -896,6 +955,8 @@ class RandomBalancedNetwork:
         rec_in_true = nest.GetLeaves(self.rec_in, local_only=True)[0]
         self.events_ex = nest.GetStatus(rec_ex_true, "events")[0]
         self.events_in = nest.GetStatus(rec_in_true, "events")[0]
+        # self.events_ex = nest.GetStatus(self.rec_ex, "events")[0]
+        # self.events_in = nest.GetStatus(self.rec_in, "events")[0]
         self.df_ex = makePandas(self.events_ex, tp.FindCenterElement(self.l)[0])
         self.df_in = makePandas(self.events_in, tp.FindCenterElement(self.l)[0])
 

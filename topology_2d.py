@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os
 import topology_2d_helper as magic
 import sys
@@ -9,7 +10,7 @@ matplotlib.use('Agg')
 
 base_folder = 'figures/'
 date_folder = 'tsodyks_analysis/'
-sub_folder = '18-12-07/'
+sub_folder = '2019/'
 all_folder = base_folder + date_folder + sub_folder
 pd.set_option('display.max_columns', 500)
 
@@ -20,18 +21,19 @@ parameters = {'Name': 'tsodyks',
               'Sigma excitational': 0.1,
               'Radius inhibitory': 0.2,
               'Sigma inhibitory': 0.1,
-              'Jee': 3.,
+              'Jee': 5.,
               'Jii': 1.,
               'Jei': 3.,
-              'Jie': -3.,
+              'Jie': -12.,
+              'Background weight': 30.,
               'Jee Connectivity': 0.4,
               'Jii Connectivity': 0.4,
               'Jei Connectivity': 0.4,
               'Jie Connectivity': 0.4,
-              'Number excitational cells': 5,
-              'Number inhibitory cells': 5,
-              'Weight Stimulus': -10., # old: -3000.
-              'Radius stimulus': 0.1,
+              'Number excitational cells': 16,
+              'Number inhibitory cells': 4,
+              'Weight Stimulus': -0., # old: -3000.
+              'Radius stimulus': 0.2,
               'Sigma Stimulus': 0.05,
               'e2e delay': 1.0,
               'e2i delay': 1.0,
@@ -39,11 +41,12 @@ parameters = {'Name': 'tsodyks',
               'i2i delay': 1.0,
               'delay growth multiplier': 2,
               'Stimulus rate': 40000.,
-              'Background rate excitatory': 25000.,
-              'Background rate inhibitory': 15000.,
-              'Time before stimulation': 500.,
-              'Time of stimulation': 100.,
-              'Time after Stimulation': 500.,
+              'Background rate excitatory': 2500.,
+              'Background rate inhibitory': 1500.,
+              'Time before stimulation': 300.,
+              'Time of stimulation': 00.,
+              'Time after Stimulation': 300.,
+              'target': 'inhi',
               }
 
 """
@@ -60,17 +63,36 @@ def test():
     magic.makeDir(curr_folder+'/inhibitory_neurons')
     magic.simulationAndAnalysis(parameters, curr_folder)
 
-path = '/home/adrossel/Magic/pickle/'
-current_subfolder = 'jii_3_edge_wrap'
-magic.simulate_and_dump(parameters, path+current_subfolder)
+
+def run_and_pickle(path):
+    nu_e = 1500.
+    parameters['Background rate excitatory'] = nu_e
+    parameters['Jee'] = 5.
+    for nu_i in [0., 300., 600., 900., 1200., 2100.]:
+        parameters['Background rate inhibitory'] = nu_i
+        current_subfolder = 'e0_%02d_i0_%02d/' % (nu_e/100., nu_i/100.,)
+        print(current_subfolder)
+        magic.simulate_and_dump(parameters, path+current_subfolder)
+
+def justPlot():
+    path = '/home/adrossel/Magic/testVisu/'
+    magic.networkVisualizationLazy(parameters, path)
 
 """
 Run Program
 """
-# magic.average_firng_rates(parameters)
-# magic.tsodyks_analysis_quiver(parameters)
+path = '/home/adrossel/Magic/pickle/phase_plane_analysis/new_small/'
+# magic.tsodyks_analysis_phase_plane(parameters,
+                                    # curr_folder=path,
+                                    # e_range=np.arange(0., 3000., 300.),
+                                    # i_range=np.arange(0., 3000., 300.),
+                                    # j_ee_range=np.arange(1.,9.,2.)
+                                   # )
+# magic.average_firng_rates(parameters, curr_folder=path)
 # tsodyksAnalysis()
 # test()
+run_and_pickle(path=path)
+# justPlot()
 
 def automation():
     radius_inhibs = [0.1, 0.2, 0.2, 0.2]
