@@ -26,26 +26,35 @@ def parse_filename(file):
             num.append(lit)
     return num
 
-def phase_plane_plot(E, I, E_average, I_average, title='Title'):
+def phase_plane_plot(ax, E, I, nu, title=''):
     E = E/1000.
     I = I/1000.
-    fig = plt.figure(figsize=plt.figaspect(0.5))
-    fig.suptitle(title)
-    ax = fig.add_subplot(1, 2, 1, projection='3d')
-    surf = ax.plot_surface(I, E, E_average, cmap=cm.coolwarm)
-    ax.set_xlabel('$I_{ext}$ (kHz)')
-    ax.set_ylabel('$E_{ext}$ (kHz)')
+    surf = ax.plot_surface(I, E, nu, cmap=cm.coolwarm)
+    ax.set_xlabel('\n\n$I_{ext}$ (kHz)')
+    ax.set_ylabel('\n\n$E_{ext}$ (kHz)')
     ax.zaxis.set_rotate_label(False)
-    ax.set_zlabel(r'$\hat{\nu_e}$')
+    ax.set_zlabel(r'$\hat{\nu}$')
     ax.view_init(elev=14, azim=-127)
-    ax = fig.add_subplot(1, 2, 2, projection='3d')
-    surf = ax.plot_surface(I, E, I_average, cmap=cm.coolwarm)
-    ax.set_xlabel('$I_{ext}$ (kHz)')
-    ax.set_ylabel('$E_{ext}$ (kHz)')
-    ax.zaxis.set_rotate_label(False)
-    ax.set_zlabel(r'$\hat{\nu_i}$')
-    ax.view_init(elev=14, azim=-127)
-    return fig, ax
+    if title:
+        ax.set_title(title)
+    return ax
+
+def phase_plane_analysis(folder):
+    E, I = pickle.load( open(folder+'/E_I.p', 'rb'))
+    pickle_files = files_start_with('e_i', path=folder)
+    number_of_js = len(pickle_files)
+    fig = plt.figure(figsize=(20, 20))
+    n = 1
+    for file in pickle_files:
+        ax1 = fig.add_subplot(number_of_js, 2, n, projection='3d')
+        ax2 = fig.add_subplot(number_of_js, 2, n+1, projection='3d')
+        n += 2
+        title = parse_filename(file)[0]
+        e, i = pickle.load( open(folder+'/'+file, 'rb'))
+        phase_plane_plot(ax1, E, I, e, title='Excitatory Neurons for $J_{ee}=%d$' % int(title))
+        phase_plane_plot(ax2, E, I, i, title='Inhibitory Neurons for $J_{ee}=%d$' % int(title))
+    plt.tight_layout()
+    return fig
 
 def distance_firing_rate(df, number_of_bins, title):
     duration = df['Time'].values.max() - df['Time'].values.min()
@@ -60,21 +69,7 @@ def distance_firing_rate(df, number_of_bins, title):
     ax.set_ylabel(r'$\hat{\nu}$')
     return ax
 
-def phase_plane_analysis(folder):
-    files = []
-    E, I = pickle.load( open(folder+'/E_I.p', 'rb'))
-    print('Matrix has '+str(len(E))+' * '+str(len(I))+' = '+str(len(E)*len(I))+' entries.')
-    pickle_files = files_start_with('e_i', path=folder)
-    for file in pickle_files:
-        title=parse_filename(file)[0]
-        e, i = pickle.load( open(folder+'/'+file, 'rb'))
-        phase_plane_plot(E, I, e, i, title=r'$J_{ee} = '+title+'$')
-        tmp_file = 'phase_plane_jee_'+title+'.pdf'
-        files.append(tmp_file)
-        plt.savefig(tmp_file)
-    return files
-
-def plot_intersections(ax, index, exc_index, e, i, E, I, file = ''):
+def plot_intersections(index, exc_index, e, i, E, I, file = ''):
     max_i = i.max()
     arange = np.arange(0.,max_i,1.)
     n = len(arange)
@@ -89,6 +84,25 @@ def plot_intersections(ax, index, exc_index, e, i, E, I, file = ''):
         print('r$\\nu_{'+str(ind)+', inh, ext} = '+str(I[ind,exc_index])+'$')
     if file:
         plt.savefig(file)
+
+def autocorr(df):
+    from scipy.signal import argrelextrema
+    bin_center, a = autoCorr(df)
+    a = a/a.max()
+    x = bin_center-0.3
+    plt.plot(x, a)
+    maxs = argrelextrema(a, np.greater)[0]
+    mid_max = int(maxs.size/2)
+    mins = argrelextrema(a, np.less)[0]
+    mid_min = int(mins.size/2)
+    plt.plot(x[maxs], a[maxs], 'ro')
+    period = x[maxs[mid_max+1]] - x[maxs[mid_max]]
+    plt.plot([x[maxs[mid_max]], x[maxs[mid_max+1]]], [a[maxs[mid_max]], a[maxs[mid_max]]], 'g-', label="%.3f" % (period,) )
+    periodicity = a[maxs[mid_max+1]] - a[mins[mid_min+1]]
+    plt.plot([x[maxs[mid_max+1]], x[maxs[mid_max+1]]], [a[mins[mid_min+1]], a[maxs[mid_max+1]]], 'y-', label="%.3f" % (periodicity))
+    plt.xlabel('Time (s)')
+    plt.ylabel('ACF')
+    plt.legend()
 
 def visualization(df, title):
     """
@@ -272,3 +286,49 @@ def autoCorr(df):
     rate_bins = (bin_heights)/(0.05*number_of_neurons)
     # a = plt.acorr(rate_bins, maxlags=17)
     return bin_centers, np.correlate(rate_bins,rate_bins,'same')
+
+def calculate_periodicity_and_period(df):
+    from scipy.signal import argrelextrema
+    bin_center, a = autoCorr(df)
+    a = a/a.max()
+    x = bin_center-0.3
+    maxs = argrelextrema(a, np.greater)[0]
+    mid_max = int(maxs.size/2)
+    mins = argrelextrema(a, np.less)[0]
+    mid_min = int(mins.size/2)
+    period = x[maxs[mid_max+1]] - x[maxs[mid_max]]
+    periodicity = a[maxs[mid_max+1]] - a[mins[mid_min+1]]
+    return periodicity, period
+
+def period_periodicity_plot(folder):
+    periodicity_folders = sorted([f[0] for f in os.walk(folder)][1:])
+    nus = []
+    ex_pys = []
+    ex_ps = []
+    in_pys = []
+    in_ps = []
+    for periodicity_folder in periodicity_folders:
+        nu = periodicity_folder.split('_')[-1]
+        df_ex = pickle.load(open(periodicity_folder+'/df_ex.pickle', 'rb'))
+        ex_py, ex_p = calculate_periodicity_and_period(df_ex)
+        df_in = pickle.load(open(periodicity_folder+'/df_in.pickle', 'rb'))
+        in_py, in_p = calculate_periodicity_and_period(df_in)
+        nus.append(nu)
+        ex_pys.append(ex_py)
+        ex_ps.append(ex_p*1000.)
+        in_pys.append(in_py)
+        in_ps.append(in_p*1000.)
+    nus = [int(nu)/10 for nu in nus]
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10,5))
+    axes[0].plot(nus, ex_pys, label='Excitatory')
+    axes[0].plot(nus, in_pys, label='Inhibitory')
+    axes[0].set_xlabel(r'$\hat{\nu}_{in, ext}$ (kHz)')
+    axes[0].set_ylabel('Periodicity')
+    axes[0].legend()
+    axes[1].plot(nus[:-3], ex_ps[:-3], label='Excitatory')
+    axes[1].plot(nus[:-3], in_ps[:-3], label='Inhibitory')
+    axes[1].set_xlabel(r'$\hat{\nu}_{in, ext}$ (kHz)')
+    axes[1].set_ylabel('Period (ms)')
+    axes[1].legend()
+    plt.tight_layout()
+    return fig

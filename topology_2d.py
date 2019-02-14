@@ -63,6 +63,18 @@ def test():
     magic.makeDir(curr_folder+'/inhibitory_neurons')
     magic.simulationAndAnalysis(parameters, curr_folder)
 
+def periodicity_test(path):
+    nu_e = 1500.
+    parameters['Background rate excitatory'] = nu_e
+    parameters['Jee'] = 5.
+    for nu_i in np.arange(0.,1300.,50.):
+        if nu_i % 100. != 0.:
+            parameters['Background rate inhibitory'] = nu_i
+            current_subfolder = 'e0_%02d_i0_%03d/' % (nu_e/10., nu_i/10.,)
+            print(current_subfolder)
+            magic.simulate_and_dump(parameters, path+'/periodicity/'+current_subfolder)
+        else:
+            print("Skipping %f" % nu_i)
 
 def run_and_pickle(path):
     nu_e = 1500.
@@ -91,7 +103,8 @@ path = '/home/adrossel/Magic/pickle/phase_plane_analysis/new_small/'
 # magic.average_firng_rates(parameters, curr_folder=path)
 # tsodyksAnalysis()
 # test()
-run_and_pickle(path=path)
+periodicity_test(path)
+# run_and_pickle(path=path)
 # justPlot()
 
 def automation():
