@@ -946,6 +946,10 @@ class RandomBalancedNetwork:
                 kernel_color='green', mask_color='green',
                 syn_type='exc_recurrent')
         # tp.PlotKernel(ax, ctr_elem, mask=self.cdict_e2e['mask'], mask_color='green')
+        plt.xlabel(r'X')
+        plt.ylabel(r'Y')
+        plt.xlim(-.5, .5)
+        plt.ylim(-.5, .5)
         plt.savefig(folder+'/kernel.pdf')
 
     def start_simulation(self):

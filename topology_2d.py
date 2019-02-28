@@ -87,7 +87,7 @@ def run_and_pickle(path):
         magic.simulate_and_dump(parameters, path+current_subfolder)
 
 def justPlot():
-    path = '/home/adrossel/Magic/testVisu/'
+    path = '/home/alex/Magic/testVisu/'
     magic.networkVisualizationLazy(parameters, path)
 
 """

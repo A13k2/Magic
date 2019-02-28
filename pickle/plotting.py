@@ -53,7 +53,7 @@ def phase_plane_analysis(folder):
         e, i = pickle.load( open(folder+'/'+file, 'rb'))
         phase_plane_plot(ax1, E, I, e, title='Excitatory Neurons for $J_{ee}=%d$' % int(title))
         phase_plane_plot(ax2, E, I, i, title='Inhibitory Neurons for $J_{ee}=%d$' % int(title))
-    plt.tight_layout()
+    # plt.tight_layout()
     return fig
 
 def distance_firing_rate(df, number_of_bins, title):
