@@ -409,3 +409,71 @@ def crossCorrPopulation(tmp1, tmp2):
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('CCF')
     return fig, ax
+
+def create_figure_grid(size):
+    import matplotlib.gridspec as gridspec
+    fig = plt.figure(figsize=(20,13))
+    gs0 = gridspec.GridSpec(12, 1)
+    grid = []
+    for i in range(size):
+        g0 = gridspec.GridSpecFromSubplotSpec(1, 12, subplot_spec=gs0[2*i], wspace=0.0, hspace=0.0)
+        g1 = gridspec.GridSpecFromSubplotSpec(1, 12, subplot_spec=gs0[2*i+1], wspace=0.0, hspace=0.0)
+        grid.append([g0,g1])
+    return fig, grid
+
+def visualisation_helper(df, g0, print_title=False, nui=3.):
+    """
+    params: print_title: Boolean, if True print time as title above plots from
+                            exc population
+    """
+    ax1 = []
+    ax2 = []
+#     for i in range(4):
+#         for j in range(3):
+#             ax1.append(plt.subplot(g0[0][i,j]))
+#             ax2.append(plt.subplot(g0[1][i,j]))
+    for j in range(12):
+        ax1.append(plt.subplot(g0[0][j]))
+        ax2.append(plt.subplot(g0[1][j]))
+    df_ex_time_cut = df[0].groupby(pd.cut(df[0]['Time'], 12))
+    df_in_time_cut = df[1].groupby(pd.cut(df[1]['Time'], 12))
+    q = 0
+    for df_now, ax in zip(df_ex_time_cut, ax1):
+        x = [i[0] for i in df_now[1]['Position']]
+        y = [i[1] for i in df_now[1]['Position']]
+        if print_title:
+            if q == 0:
+                ax.text(-0.77, 0.65, r'Time (ms)', va="center", ha="center")
+            ax.set_title(df_now[0], fontdict={'fontsize': 8})
+        if q == 0:
+            ax.text(-1.3, -0.65, r'$\hat{\nu}_{ext, i}=%.0f$ Hz' % (nui*100., ) , va="center", ha="center")
+            ax.text(-0.65, 0., r'Exc.', va="center", ha="center")
+        h, x, y, q = ax.hist2d(x, y, bins=40, cmap=plt.cm.jet, normed=True, vmin=0., vmax=1.)
+        q.set_edgecolor('face')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.grid(False)
+    q = 0
+    for df_now, ax in zip(df_in_time_cut, ax2):
+        if q == 0:
+            ax.text(-0.65, 0., r'Inh.', va="center", ha="center")
+        x = [i[0] for i in df_now[1]['Position']]
+        y = [i[1] for i in df_now[1]['Position']]
+        h, x, y, q = ax.hist2d(x, y, bins=40, cmap=plt.cm.jet, normed=True, vmin=0., vmax=1.)
+        q.set_edgecolor('face')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.grid(False)
+    return q
+
+def visualisation_monster(dfs, title=None, nuis=[]):
+    import matplotlib.gridspec as gridspec
+    fig, grid = create_figure_grid(len(dfs))
+    plt.subplots_adjust(top=0.9, hspace=0.25, right=0.84)
+    q = 0
+    for df, g0, nui in zip(dfs, grid, nuis):
+        if q == 0:
+            q = visualisation_helper(df, g0, print_title=True, nui = nui)
+        else:
+            q = visualisation_helper(df, g0, nui = nui)
+    return fig
