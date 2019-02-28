@@ -1,0 +1,9 @@
+*.pdf
+*.p
+*.pickle
+*.aux
+*.log
+*.swp
+*.xml
+*.iml
+__pycache__

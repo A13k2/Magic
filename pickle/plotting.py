@@ -43,7 +43,7 @@ def phase_plane_analysis(folder):
     E, I = pickle.load( open(folder+'/E_I.p', 'rb'))
     pickle_files = files_start_with('e_i', path=folder)
     number_of_js = len(pickle_files)
-    fig = plt.figure(figsize=(20, 20))
+    fig = plt.figure(figsize=(15, 20))
     n = 1
     for file in pickle_files:
         ax1 = fig.add_subplot(number_of_js, 2, n, projection='3d')
@@ -89,20 +89,42 @@ def autocorr(df):
     from scipy.signal import argrelextrema
     bin_center, a = autoCorr(df)
     a = a/a.max()
-    x = bin_center-0.3
+    # x = bin_center-0.3
+    x = bin_center - (bin_center.max()-bin_center.min())/2. - bin_center.min()
     plt.plot(x, a)
     maxs = argrelextrema(a, np.greater)[0]
     mid_max = int(maxs.size/2)
     mins = argrelextrema(a, np.less)[0]
     mid_min = int(mins.size/2)
     plt.plot(x[maxs], a[maxs], 'ro')
-    period = x[maxs[mid_max+1]] - x[maxs[mid_max]]
-    plt.plot([x[maxs[mid_max]], x[maxs[mid_max+1]]], [a[maxs[mid_max]], a[maxs[mid_max]]], 'g-', label="%.3f" % (period,) )
-    periodicity = a[maxs[mid_max+1]] - a[mins[mid_min+1]]
-    plt.plot([x[maxs[mid_max+1]], x[maxs[mid_max+1]]], [a[mins[mid_min+1]], a[maxs[mid_max+1]]], 'y-', label="%.3f" % (periodicity))
+    if maxs.size > 2 and mins.size > 2:
+        period = x[maxs[mid_max+1]] - x[maxs[mid_max]]
+        plt.plot([x[maxs[mid_max]], x[maxs[mid_max+1]]], [a[maxs[mid_max]], a[maxs[mid_max]]], 'g-', label="%.3f" % (period,) )
+        periodicity = a[maxs[mid_max+1]] - a[mins[mid_min+1]]
+        plt.plot([x[maxs[mid_max+1]], x[maxs[mid_max+1]]], [a[mins[mid_min+1]], a[maxs[mid_max+1]]], 'y-', label="%.3f" % (periodicity))
     plt.xlabel('Time (s)')
     plt.ylabel('ACF')
     plt.legend()
+
+def visualization_times(df, title):
+    """
+    Visualizes a pandas dataframe for a spike detector. Position is needed.
+    Firing Rate for Time interval, plot of 4*3.
+    :param df: Pandas dataframe
+    :param title: Title of the Plot
+    :return: Returns figure and axes from pyplot.subplots()
+    """
+    df_time_cut = df.groupby(pd.cut(df['Time'], 12))
+    fig, axes = plt.subplots(nrows=4, ncols=3, sharex=True, sharey=True)
+    fig.suptitle(title)
+    # plt.subplots_adjust(top=0.9, hspace=0.25, right=0.84)
+    for df_now, ax1 in zip(df_time_cut, axes.flat):
+        # ax1.set_title(df_now[0], fontdict={'fontsize': 5})
+        ax1.text(0.5, 0.5, df_now[0], va="center", ha="center")
+    fig.text(0.5, 0.02, 'X', ha='center')
+    fig.text(0.02, 0.5, 'Y', va='center', rotation='vertical')
+    # plt.tight_layout()
+    return fig, axes
 
 def visualization(df, title):
     """
@@ -229,8 +251,8 @@ def printParams(folder):
         print('%s : %s' % (param_key, params[param_key],))
 
 def test_trace_inner(ax, avr_e, avr_i, stim_start=None, stim_end=None, title=None):
-    avr_e.plot(ax=ax, label=r'$\hat{\nu_e}$', color='red')
-    avr_i.plot(ax=ax, label=r'$\hat{\nu_i}$', color='green')
+    avr_e.plot(ax=ax, label=r'$\hat{\nu_e}$', color='green')
+    avr_i.plot(ax=ax, label=r'$\hat{\nu_i}$', color='red')
     ax.set_xlabel(r'Time (ms)')
     ax.set_ylabel(r'$\hat{\nu}$ (Hz)')
     if title:
@@ -277,7 +299,8 @@ def autoCorr(df):
     :params df: dataframe
     :return list
     """
-    y = df[['Sender', 'Time']].values[:,1]/1000.
+    y = df['Time'].values/1000.
+    y = y[y > 50./1000.]
     # Get Rate from binning
     binning = np.arange(y.min(),y.max(),0.005)
     bin_heights, bin_borders = np.histogram(y, bins=binning)
@@ -291,13 +314,18 @@ def calculate_periodicity_and_period(df):
     from scipy.signal import argrelextrema
     bin_center, a = autoCorr(df)
     a = a/a.max()
-    x = bin_center-0.3
+    # x = bin_center-0.3
+    x = bin_center - (bin_center.max()-bin_center.min())/2. - bin_center.min()
     maxs = argrelextrema(a, np.greater)[0]
-    mid_max = int(maxs.size/2)
     mins = argrelextrema(a, np.less)[0]
-    mid_min = int(mins.size/2)
-    period = x[maxs[mid_max+1]] - x[maxs[mid_max]]
-    periodicity = a[maxs[mid_max+1]] - a[mins[mid_min+1]]
+    if maxs.size > 2 and mins.size > 2:
+        mid_max = int(maxs.size/2)
+        mid_min = int(mins.size/2)
+        period = x[maxs[mid_max+1]] - x[maxs[mid_max]]
+        periodicity = a[maxs[mid_max+1]] - a[mins[mid_min+1]]
+    else:
+        period = 0.
+        periodicity = 0.
     return periodicity, period
 
 def period_periodicity_plot(folder):
@@ -318,7 +346,7 @@ def period_periodicity_plot(folder):
         ex_ps.append(ex_p*1000.)
         in_pys.append(in_py)
         in_ps.append(in_p*1000.)
-    nus = [int(nu)/10 for nu in nus]
+    nus = [int(nu)/100 for nu in nus]
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10,5))
     axes[0].plot(nus, ex_pys, label='Excitatory')
     axes[0].plot(nus, in_pys, label='Inhibitory')
@@ -326,9 +354,58 @@ def period_periodicity_plot(folder):
     axes[0].set_ylabel('Periodicity')
     axes[0].legend()
     axes[1].plot(nus[:-3], ex_ps[:-3], label='Excitatory')
-    axes[1].plot(nus[:-3], in_ps[:-3], label='Inhibitory')
+    axes[1].plot(nus[:-3], in_ps[:-3], 'r-', label='Inhibitory', dashes=[6,6])
     axes[1].set_xlabel(r'$\hat{\nu}_{in, ext}$ (kHz)')
     axes[1].set_ylabel('Period (ms)')
     axes[1].legend()
+    axes[1].set_ylim(bottom=0)
     plt.tight_layout()
     return fig
+
+def get_histo(y, binning, step=0.005, number_of_neurons=16):
+    bin_heights, bin_borders = np.histogram(y, bins=binning)
+    bin_centers = bin_borders[:-1] + np.diff(bin_borders) / 2
+    rate_bins = (bin_heights)/(step*number_of_neurons)
+    return bin_centers, rate_bins
+
+def crossCorr(series1, series2):
+    min_1 = np.min(series1['Time'].values)
+    min_2 = np.min(series2['Time'].values)
+    if min_1 <= min_2:
+        max_min = min_2
+    else:
+        max_min = min_1
+    series1 = series1[series1['Time'] > max_min]
+    series2 = series2[series2['Time'] > max_min]
+    y1 = (series1['Time'].values)/1000.
+    y2 = (series2['Time'].values)/1000.
+    # Get Rate from binning
+    binning = np.arange(y1.min(),y1.max(),0.005)
+    bin_centers1, rate_bins1 = get_histo(y1, binning)
+    bin_centers2, rate_bins2 = get_histo(y2, binning)
+    return bin_centers1, np.correlate(rate_bins1,rate_bins2,'same')
+
+def crossCorrPosition(tmp1, tmp2, tmp3):
+    fig, ax = plt.subplots()
+    bin_center, a = crossCorr(tmp1, tmp2)
+    bin_center2, a2 = crossCorr(tmp2, tmp3)
+    a = a/a.max()
+    a2 = a2/a2.max()
+    x_ = bin_center - (bin_center.max()-bin_center.min())/2. - bin_center.min()
+    x_2 = bin_center2 - (bin_center2.max()-bin_center2.min())/2. - bin_center2.min()
+    ax.plot(x_, a, label="cross(-1,0)")
+    ax.plot(x_2, a2, label="cross(0,1)")
+    ax.legend()
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('CCF')
+    return fig, ax
+
+def crossCorrPopulation(tmp1, tmp2):
+    fig, ax = plt.subplots()
+    bin_center, a = crossCorr(tmp1, tmp2)
+    a = a/a.max()
+    x_ = bin_center - (bin_center.max()-bin_center.min())/2. - bin_center.min()
+    ax.plot(x_, a)
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('CCF')
+    return fig, ax

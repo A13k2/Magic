@@ -61,23 +61,26 @@ def average_firng_rates(parameters, curr_folder='.'):
     parameters['Time of stimulation'] = 1000.
     num_i_neurons, num_e_neurons = num_of_neurons(parameters)
     for target in ['exci', 'inhi']:
-        for jee in [5.]:
+        for jee in [1.]:
             for back_i in [0., 300., 600., 1200.]:
                 for stim_weight in [-300000., 300000.]:
                     parameters['target'] = target
                     parameters['Jee'] = jee
                     parameters['Weight Stimulus'] = stim_weight
                     parameters['Background rate inhibitory'] = back_i
-                    simulation = magic.RandomBalancedNetwork(parameters)
-                    simulation.start_simulation()
-                    average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
-                    average_i = firing_rate_time(simulation.df_in, num_i_neurons)
-                    with open('%s/stimulus/%s_%d_%02d_%d.p' % (
-                        curr_folder, target[:-1], jee, int(back_i/100.), stim_weight
-                        ), 'wb') as f:
-                    # with open(curr_folder + '/stimulus/' + target[:-1] + '_' +
-                            # str(int(jee))+'_'+str(int(back_i/100.))+'_'+str(int(stim_weight))+'.p','wb') as f:
-                        pickle.dump((average_e, average_i), f)
+                    # simulation = magic.RandomBalancedNetwork(parameters)
+                    print(target, jee, back_i, stim_weight)
+                    print('%s/stimulus/%s_%d_%02d_%d.p' % ( curr_folder,
+                        target[:-1], jee, int(back_i/100.), stim_weight))
+                    # simulation.start_simulation()
+                    # average_e = firing_rate_time(simulation.df_ex, num_e_neurons)
+                    # average_i = firing_rate_time(simulation.df_in, num_i_neurons)
+                    # with open('%s/stimulus/%s_%d_%02d_%d.p' % (
+                        # curr_folder, target[:-1], jee, int(back_i/100.), stim_weight
+                        # ), 'wb') as f:
+                    # # with open(curr_folder + '/stimulus/' + target[:-1] + '_' +
+                            # # str(int(jee))+'_'+str(int(back_i/100.))+'_'+str(int(stim_weight))+'.p','wb') as f:
+                        # pickle.dump((average_e, average_i), f)
 
 def firing_rate_time(df, num_neurons, num_bins=20):
     bins = np.linspace(df['Time'].min(), df['Time'].max(), num_bins)

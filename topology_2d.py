@@ -21,7 +21,7 @@ parameters = {'Name': 'tsodyks',
               'Sigma excitational': 0.1,
               'Radius inhibitory': 0.2,
               'Sigma inhibitory': 0.1,
-              'Jee': 5.,
+              'Jee': 3.,
               'Jii': 1.,
               'Jei': 3.,
               'Jie': -12.,
@@ -43,9 +43,9 @@ parameters = {'Name': 'tsodyks',
               'Stimulus rate': 40000.,
               'Background rate excitatory': 2500.,
               'Background rate inhibitory': 1500.,
-              'Time before stimulation': 300.,
-              'Time of stimulation': 00.,
-              'Time after Stimulation': 300.,
+              'Time before stimulation': 2000.,
+              'Time of stimulation': 1000.,
+              'Time after Stimulation': 2000.,
               'target': 'inhi',
               }
 
@@ -103,9 +103,9 @@ path = '/home/adrossel/Magic/pickle/phase_plane_analysis/new_small/'
 # magic.average_firng_rates(parameters, curr_folder=path)
 # tsodyksAnalysis()
 # test()
-periodicity_test(path)
+# periodicity_test(path)
 # run_and_pickle(path=path)
-# justPlot()
+justPlot()
 
 def automation():
     radius_inhibs = [0.1, 0.2, 0.2, 0.2]
